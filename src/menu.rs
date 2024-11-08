@@ -8,6 +8,12 @@ pub struct Menu {
 
 impl Menu {
     pub fn new(char_width: usize, char_height: usize, items: Vec<MenuItemEnum>) -> Menu {
+        if items.len() == 0 {
+            panic!(
+                "At least 1 menu item required."
+            );
+        }
+
         if char_width < 2 || char_height < 2 {
             panic!(
                 "Invalid menu char width and/or height. At least 2 chars required per dimension."
@@ -28,15 +34,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_create_empty_menu() {
-        let items: Vec<MenuItemEnum> = Vec::new();
-        let menu = Menu::new(16, 2, items);
-        assert_eq!(menu.char_width, 16);
-        assert_eq!(menu.char_height, 2);
-        assert_eq!(menu.items.len(), 0);
-    }
-
-    #[test]
     fn can_create_simple_menu() {
         let items: Vec<MenuItemEnum> = vec!(MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))));
         let menu = Menu::new(16, 2, items);
@@ -48,14 +45,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Invalid menu char width and/or height. At least 2 chars required per dimension.")]
     fn panics_if_invalid_char_width() {
-        let items: Vec<MenuItemEnum> = Vec::new();
+        let items: Vec<MenuItemEnum> = vec!(MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))));
         Menu::new(1, 2, items);
     }
 
     #[test]
     #[should_panic(expected = "Invalid menu char width and/or height. At least 2 chars required per dimension.")]
     fn panics_if_invalid_char_height() {
-        let items: Vec<MenuItemEnum> = Vec::new();
+        let items: Vec<MenuItemEnum> = vec!(MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))));
         Menu::new(16, 1, items);
     }
 }
