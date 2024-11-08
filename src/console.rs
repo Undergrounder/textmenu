@@ -2,6 +2,7 @@ use crate::menu::Menu;
 use crate::menu_item::MenuItem;
 use crate::menu_item_enum::MenuItemEnum;
 
+// TODO move char width and height
 pub struct ConsoleRenderer<'a> {
     last_tick_id: usize,
     last_rendered_lines: Vec<String>,
@@ -19,13 +20,22 @@ impl ConsoleRenderer<'_> {
 
     fn generate_lines_to_render(&self) -> Vec<String> {
         let mut lines_to_render: Vec<String> = Vec::with_capacity(self.menu.char_height);
-        // TODO render current selection + arrows
-        // TODO overflow and scrolling
-        for item in self.menu.items.iter() {
+        // TODO overflow
+        // TODO render arrows
+        // TODO scrolling if overflow
+        for (item_idx, item) in self.menu.items.iter().enumerate() {
+            let selection_str: &str = if item_idx == self.menu.focused_item_idx {
+                "→"
+            } else {
+                " "
+            };
             let label = match item {
                 MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label()
             };
-            lines_to_render.push(label.clone());
+
+            let mut line_to_render = selection_str.to_owned();
+            line_to_render.push_str(label);
+            lines_to_render.push(line_to_render);
         }
 
         lines_to_render

@@ -4,6 +4,7 @@ pub struct Menu {
     pub char_width: usize,
     pub char_height: usize,
     pub items: Vec<MenuItemEnum>,
+    pub focused_item_idx: usize,
 }
 
 impl Menu {
@@ -23,7 +24,8 @@ impl Menu {
         Menu {
             char_width,
             char_height,
-            items
+            items,
+            focused_item_idx: 0
         }
     }
 }
