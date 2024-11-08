@@ -2,7 +2,6 @@ use crate::menu::Menu;
 use crate::menu_item::MenuItem;
 use crate::menu_item_enum::MenuItemEnum;
 
-// TODO move char width and height
 pub struct ConsoleRenderer<'a> {
     last_tick_id: usize,
     last_rendered_lines: Vec<String>,
@@ -19,26 +18,35 @@ impl ConsoleRenderer<'_> {
     }
 
     fn generate_lines_to_render(&self) -> Vec<String> {
-        let mut lines_to_render: Vec<String> = Vec::with_capacity(self.menu.char_height);
-        // TODO overflow
-        // TODO render arrows
-        // TODO scrolling if overflow
-        for (item_idx, item) in self.menu.items.iter().enumerate() {
-            let selection_str: &str = if item_idx == self.menu.focused_item_idx {
-                "→"
-            } else {
-                " "
-            };
-            let label = match item {
-                MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label()
-            };
-
-            let mut line_to_render = selection_str.to_owned();
-            line_to_render.push_str(label);
+        let menu = self.menu;
+        let mut lines_to_render: Vec<String> = Vec::with_capacity(menu.char_height);
+        let top_visible_item_idx = menu.top_visible_item_idx;
+        let visible_items = &self.menu.items[top_visible_item_idx..top_visible_item_idx + menu.char_height];
+        for (item_idx, item) in visible_items.iter().enumerate() {
+            let line_to_render = self.generate_line_to_render(item_idx, item);
             lines_to_render.push(line_to_render);
         }
 
         lines_to_render
+    }
+
+    fn generate_line_to_render(&self, item_idx: usize, item: &MenuItemEnum) -> String {
+        let selection_str: &str = if item_idx == self.menu.selected_item_idx {
+            "→"
+        } else {
+            " "
+        };
+        let label = match item {
+            MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label()
+        };
+
+        // TODO render arrows if overflows
+        // TODO trim if overflow
+        // TODO scrolling if overflow
+
+        let mut line_to_render = selection_str.to_owned();
+        line_to_render.push_str(label);
+        line_to_render
     }
 
     pub fn tick(&mut self, tick_id: usize) {
