@@ -23,7 +23,8 @@ impl ConsoleRenderer<'_> {
         let top_visible_item_idx = menu.top_visible_item_idx;
         let visible_items = &self.menu.items[top_visible_item_idx..top_visible_item_idx + menu.char_height];
         for (item_idx, item) in visible_items.iter().enumerate() {
-            let line_to_render = self.generate_line_to_render(item_idx, item);
+            let corrected_item_idx = item_idx + top_visible_item_idx;
+            let line_to_render = self.generate_line_to_render(corrected_item_idx, item);
             lines_to_render.push(line_to_render);
         }
 
@@ -39,14 +40,33 @@ impl ConsoleRenderer<'_> {
         let label = match item {
             MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label()
         };
+        let max_length_label = self.menu.char_width - 2;
+        let label_trimmed = if label.len() > max_length_label {
+            &label[..max_length_label]
+        } else {
+            label
+        };
 
-        // TODO render arrows if overflows
-        // TODO trim if overflow
+        let bottom_item_idx = self.menu.top_visible_item_idx + self.menu.char_height - 1;
+        let arrow_str: &str = if item_idx == self.menu.top_visible_item_idx{
+            if self.menu.top_visible_item_idx != 0 {
+                "↑"
+            } else {
+                " "
+            }
+        } else if item_idx == bottom_item_idx {
+            if bottom_item_idx < self.menu.items.len() - 1 {
+                "↓"
+            } else {
+                " "
+            }
+        } else {
+            " "
+        };
+
         // TODO scrolling if overflow
 
-        let mut line_to_render = selection_str.to_owned();
-        line_to_render.push_str(label);
-        line_to_render
+        format!("{}{:3$}{}", selection_str, label_trimmed, arrow_str, max_length_label)
     }
 
     pub fn tick(&mut self, tick_id: usize) {
@@ -64,3 +84,5 @@ impl ConsoleRenderer<'_> {
         }
     }
 }
+
+// TODO tests
