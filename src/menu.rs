@@ -16,9 +16,15 @@ impl Menu {
             );
         }
 
-        if char_width < 2 || char_height < 2 {
+        if char_width < 3 {
             panic!(
-                "Invalid menu char width and/or height. At least 2 chars required per dimension."
+                "Invalid menu char width. At least 3 chars required."
+            );
+        }
+
+        if char_height < 2 {
+            panic!(
+                "Invalid menu char height. At least 2 chars required."
             );
         }
 
@@ -47,14 +53,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid menu char width and/or height. At least 2 chars required per dimension.")]
+    #[should_panic(expected = "Invalid menu char width. At least 3 chars required.")]
     fn panics_if_invalid_char_width() {
         let items: Vec<MenuItemEnum> = vec!(MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))));
         Menu::new(1, 2, items);
     }
 
     #[test]
-    #[should_panic(expected = "Invalid menu char width and/or height. At least 2 chars required per dimension.")]
+    #[should_panic(expected = "Invalid menu char height. At least 2 chars required.")]
     fn panics_if_invalid_char_height() {
         let items: Vec<MenuItemEnum> = vec!(MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))));
         Menu::new(16, 1, items);
