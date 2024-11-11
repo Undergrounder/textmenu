@@ -33,7 +33,7 @@ impl Menu {
 
     fn get_top_visible_item_idx(&self) -> usize {
         let div = self.selected_item_idx.div_euclid(self.char_height);
-        div*self.char_height
+        div * self.char_height
     }
 
     pub fn generate_lines_to_render(&self) -> Vec<String> {
@@ -41,8 +41,7 @@ impl Menu {
         let mut lines_to_render: Vec<String> = Vec::with_capacity(self.char_height);
         let top_visible_item_idx = self.get_top_visible_item_idx();
         let bottom_idx = std::cmp::min(self.char_height + top_visible_item_idx, items_length);
-        let visible_items =
-            &self.items[top_visible_item_idx..bottom_idx];
+        let visible_items = &self.items[top_visible_item_idx..bottom_idx];
         for (item_idx, item) in visible_items.iter().enumerate() {
             let corrected_item_idx = item_idx + top_visible_item_idx;
             let line_to_render = self.generate_line_to_render(corrected_item_idx, item);
@@ -101,7 +100,6 @@ impl Menu {
         } else {
             false
         }
-
     }
 
     pub fn go_down(&mut self) -> bool {
@@ -141,21 +139,11 @@ mod tests {
     #[test]
     fn can_create_complex_menu() {
         let items: Vec<MenuItemEnum> = vec![
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item1"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item2"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item3"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item4"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item5"),
-            ))
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item3"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item4"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item5"))),
         ];
         let mut menu = Menu::new(16, 2, items);
         assert_eq!(menu.char_width, 16);

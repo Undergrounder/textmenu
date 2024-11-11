@@ -3,7 +3,7 @@ use crate::menu::Menu;
 pub struct ConsoleRenderer<'a> {
     last_tick_id: usize,
     last_rendered_lines: Vec<String>,
-    menu: &'a Menu
+    menu: &'a Menu,
 }
 
 impl ConsoleRenderer<'_> {

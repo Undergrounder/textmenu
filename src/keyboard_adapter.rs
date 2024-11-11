@@ -6,7 +6,7 @@ enum KeyboardAction {
     BACKSPACE,
     CLEAR,
     NUMBER(u8),
-    TEXT(String)
+    TEXT(String),
 }
 
 trait KeyboardAdapter {
