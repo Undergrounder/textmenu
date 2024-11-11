@@ -9,7 +9,7 @@ fn main() {
         MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Dominación"))),   // TODO
         MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Ajustes"))),      // TODO
     ];
-    let menu = Menu::new(16, 2, items);
+    let menu = Menu::new(16, 2, items).unwrap();
     let mut console_renderer = ConsoleRenderer::new(&menu);
 
     let mut tick_id: usize = 0;

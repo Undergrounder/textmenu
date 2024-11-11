@@ -10,24 +10,25 @@ pub struct Menu {
 }
 
 impl Menu {
-    pub fn new(char_width: usize, char_height: usize, items: Vec<MenuItemEnum>) -> Menu {
+    pub fn new(
+        char_width: usize,
+        char_height: usize,
+        items: Vec<MenuItemEnum>,
+    ) -> Result<Menu, String> {
         if items.len() == 0 {
-            panic!("At least 1 menu item required.");
-        }
-
-        if char_width < 3 {
-            panic!("Invalid menu char width. At least 3 chars required.");
-        }
-
-        if char_height < 2 {
-            panic!("Invalid menu char height. At least 2 chars required.");
-        }
-
-        Menu {
-            char_width,
-            char_height,
-            items,
-            selected_item_idx: 0,
+            Err("At least 1 menu item required.".to_string())
+        } else if char_width < 3 {
+            Err("Invalid menu char width. At least 3 chars required.".to_string())
+        } else if char_height < 2 {
+            Err("Invalid menu char height. At least 2 chars required.".to_string())
+        } else {
+            let menu = Menu {
+                char_width,
+                char_height,
+                items,
+                selected_item_idx: 0,
+            };
+            Ok(menu)
         }
     }
 
@@ -120,13 +121,14 @@ impl Menu {
 mod tests {
     use super::*;
     use crate::basic_menu_item::BasicMenuItem;
+    use log::error;
 
     #[test]
     fn can_create_simple_menu() {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
-        let menu = Menu::new(16, 2, items);
+        let menu = Menu::new(16, 2, items).unwrap();
         assert_eq!(menu.char_width, 16);
         assert_eq!(menu.char_height, 2);
         assert_eq!(menu.items.len(), 1);
@@ -145,7 +147,7 @@ mod tests {
             MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item4"))),
             MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item5"))),
         ];
-        let mut menu = Menu::new(16, 2, items);
+        let mut menu = Menu::new(16, 2, items).unwrap();
         assert_eq!(menu.char_width, 16);
         assert_eq!(menu.char_height, 2);
         assert_eq!(menu.items.len(), 5);
@@ -192,20 +194,39 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid menu char width. At least 3 chars required.")]
     fn panics_if_invalid_char_width() {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
-        Menu::new(1, 2, items);
+        if let (Err(error)) = Menu::new(1, 2, items) {
+            assert_eq!(error, "Invalid menu char width. At least 3 chars required.")
+        } else {
+            panic!("It should return an error");
+        }
     }
 
     #[test]
-    #[should_panic(expected = "Invalid menu char height. At least 2 chars required.")]
     fn panics_if_invalid_char_height() {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
-        Menu::new(16, 1, items);
+        if let (Err(error)) = Menu::new(16, 1, items) {
+            assert_eq!(
+                error,
+                "Invalid menu char height. At least 2 chars required."
+            )
+        } else {
+            panic!("It should return an error");
+        }
     }
 }
+
+// TODO improvements:
+// TODO Action item
+// TODO list item
+// TODO range item (int, float)
+// TODO Toggle item + with customizable labels
+// TODO input item
+// TODO charset input item
+// TODO submenus
+// TODO screens
