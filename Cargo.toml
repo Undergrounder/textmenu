@@ -5,3 +5,6 @@ edition = "2021"
 
 [dev-dependencies]
 gag = "1.0.0"
+
+[dependencies]
+crossterm = "0.28.1"
