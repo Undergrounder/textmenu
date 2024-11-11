@@ -1,4 +1,4 @@
-use crate::menu_item::MenuItem;
+use crate::menu_items::menu_item::MenuItem;
 
 pub struct BasicMenuItem {
     label: String,

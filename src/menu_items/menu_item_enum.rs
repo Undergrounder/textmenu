@@ -1,4 +1,4 @@
-use crate::basic_menu_item::BasicMenuItem;
+use crate::menu_items::basic_menu_item::BasicMenuItem;
 
 pub enum MenuItemEnum {
     BasicMenuItem(BasicMenuItem),

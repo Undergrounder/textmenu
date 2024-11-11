@@ -1,5 +1,5 @@
-use crate::menu_item::MenuItem;
-use crate::menu_item_enum::MenuItemEnum;
+use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item_enum::MenuItemEnum;
 
 pub struct Menu {
     pub char_width: usize,
@@ -120,8 +120,7 @@ impl Menu {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_menu_item::BasicMenuItem;
-    use log::error;
+    use crate::menu_items::basic_menu_item::BasicMenuItem;
 
     #[test]
     fn can_create_simple_menu() {
