@@ -1,7 +1,7 @@
-use textmenu::menu_items::basic_menu_item::BasicMenuItem;
-use textmenu::renderers::console::ConsoleRenderer;
 use textmenu::menu::Menu;
+use textmenu::menu_items::basic_menu_item::BasicMenuItem;
 use textmenu::menu_items::menu_item_enum::MenuItemEnum;
+use textmenu::renderers::console::ConsoleRenderer;
 
 fn main() {
     let items: Vec<MenuItemEnum> = vec![

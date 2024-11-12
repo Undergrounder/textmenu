@@ -14,6 +14,8 @@ impl MenuItem for BasicMenuItem {
     fn get_label(&self) -> &String {
         &self.label
     }
+
+    fn press(&mut self) -> () {}
 }
 
 #[cfg(test)]

@@ -3,11 +3,11 @@ use crate::menu::Menu;
 pub struct ConsoleRenderer<'a> {
     last_tick_id: usize,
     last_rendered_lines: Vec<String>,
-    menu: &'a Menu,
+    menu: &'a Menu<'a>,
 }
 
-impl ConsoleRenderer<'_> {
-    pub fn new(menu: &Menu) -> ConsoleRenderer {
+impl<'a> ConsoleRenderer<'a> {
+    pub fn new(menu: &'a Menu<'a>) -> ConsoleRenderer<'a> {
         ConsoleRenderer {
             last_tick_id: usize::MAX,
             menu: &menu,

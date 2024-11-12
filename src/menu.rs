@@ -1,15 +1,15 @@
 use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::menu_item_enum::MenuItemEnum;
 
-pub struct Menu {
+pub struct Menu<'a> {
     pub char_width: usize,
     pub char_height: usize,
-    pub items: Vec<MenuItemEnum>,
+    pub items: Vec<MenuItemEnum<'a>>,
     // View state
     pub selected_item_idx: usize,
 }
 
-impl Menu {
+impl<'a> Menu<'a> {
     pub fn new(
         char_width: usize,
         char_height: usize,
@@ -60,6 +60,7 @@ impl Menu {
         };
         let label = match item {
             MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label(),
+            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.get_label(),
         };
         let max_length_label = self.char_width - 2;
         let label_trimmed = if label.len() > max_length_label {
@@ -115,12 +116,26 @@ impl Menu {
             false
         }
     }
+
+    pub fn press(&mut self) -> () {
+        // TODO use traits or dynamic dispatch
+        let selected_item = &mut self.items[self.selected_item_idx];
+        match selected_item {
+            MenuItemEnum::BasicMenuItem(basic_menu_item) => {
+                basic_menu_item.press();
+            }
+            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.press(),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::menu_items::action_menu_item::ActionMenuItem;
     use crate::menu_items::basic_menu_item::BasicMenuItem;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[test]
     fn can_create_simple_menu() {
@@ -197,7 +212,7 @@ mod tests {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
-        if let (Err(error)) = Menu::new(1, 2, items) {
+        if let Err(error) = Menu::new(1, 2, items) {
             assert_eq!(error, "Invalid menu char width. At least 3 chars required.")
         } else {
             panic!("It should return an error");
@@ -209,7 +224,7 @@ mod tests {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
-        if let (Err(error)) = Menu::new(16, 1, items) {
+        if let Err(error) = Menu::new(16, 1, items) {
             assert_eq!(
                 error,
                 "Invalid menu char height. At least 2 chars required."
@@ -218,10 +233,59 @@ mod tests {
             panic!("It should return an error");
         }
     }
+
+    #[test]
+    fn pressing_basic_item_does_nothing() {
+        let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+            String::from("Item1"),
+        ))];
+        let mut menu = Menu::new(16, 2, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.items.len(), 1);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 1);
+        assert_eq!(lines_to_render[0], String::from("→Item1          "));
+
+        menu.press();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 1);
+        assert_eq!(lines_to_render[0], String::from("→Item1          "));
+    }
+
+    #[test]
+    fn pressing_action_item_triggers_action() {
+        let clicked_count = Rc::new(RefCell::new(0));
+        let clicked_count_clone = Rc::clone(&clicked_count);
+        let mut on_click = move || {
+            *clicked_count_clone.borrow_mut() += 1;
+        };
+        let items: Vec<MenuItemEnum> = vec![
+            MenuItemEnum::ActionMenuItem(ActionMenuItem::new(String::from("Item1"), &mut on_click)),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+        ];
+        let mut menu = Menu::new(16, 2, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.items.len(), 2);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(*clicked_count.borrow(), 0);
+
+        menu.press();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(*clicked_count.borrow(), 1);
+    }
 }
 
 // TODO improvements:
-// TODO Action item
 // TODO list item
 // TODO range item (int, float)
 // TODO Toggle item + with customizable labels
