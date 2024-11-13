@@ -7,6 +7,7 @@ pub struct Menu<'a> {
     pub items: Vec<MenuItemEnum<'a>>,
     // View state
     pub selected_item_idx: usize,
+    pub is_focused: bool,
 }
 
 impl<'a> Menu<'a> {
@@ -27,6 +28,7 @@ impl<'a> Menu<'a> {
                 char_height,
                 items,
                 selected_item_idx: 0,
+                is_focused: false,
             };
             Ok(menu)
         }
@@ -54,19 +56,24 @@ impl<'a> Menu<'a> {
 
     fn generate_line_to_render(&self, item_idx: usize, item: &MenuItemEnum) -> String {
         let selection_str: &str = if item_idx == self.selected_item_idx {
-            "→"
+            if self.is_focused {
+                "←"
+            } else {
+                "→"
+            }
         } else {
             " "
         };
         let label = match item {
             MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label(),
             MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.get_label(),
+            MenuItemEnum::ListMenuItem(action_list_menu_item) => action_list_menu_item.get_label(),
         };
         let max_length_label = self.char_width - 2;
         let label_trimmed = if label.len() > max_length_label {
             &label[..max_length_label]
         } else {
-            label
+            &label
         };
 
         let top_visible_item_idx = self.get_top_visible_item_idx();
@@ -87,8 +94,6 @@ impl<'a> Menu<'a> {
             " "
         };
 
-        // TODO horizontal scrolling if overflow
-
         format!(
             "{}{:3$}{}",
             selection_str, label_trimmed, arrow_str, max_length_label
@@ -96,7 +101,9 @@ impl<'a> Menu<'a> {
     }
 
     pub fn go_up(&mut self) -> bool {
-        if let Some(new_selected_item_idx) = self.selected_item_idx.checked_sub(1) {
+        if self.is_focused {
+            false
+        } else if let Some(new_selected_item_idx) = self.selected_item_idx.checked_sub(1) {
             self.selected_item_idx = new_selected_item_idx;
             true
         } else {
@@ -105,7 +112,9 @@ impl<'a> Menu<'a> {
     }
 
     pub fn go_down(&mut self) -> bool {
-        if let Some(new_selected_item_idx) = self.selected_item_idx.checked_add(1) {
+        if self.is_focused {
+            false
+        } else if let Some(new_selected_item_idx) = self.selected_item_idx.checked_add(1) {
             if new_selected_item_idx < self.items.len() {
                 self.selected_item_idx = new_selected_item_idx;
                 true
@@ -120,11 +129,22 @@ impl<'a> Menu<'a> {
     pub fn press(&mut self) -> () {
         // TODO use traits or dynamic dispatch
         let selected_item = &mut self.items[self.selected_item_idx];
+        let is_focusable: bool = match selected_item {
+            MenuItemEnum::BasicMenuItem(basic_menu_item) => {
+                basic_menu_item.is_focusable()
+            }
+            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.is_focusable(),
+            MenuItemEnum::ListMenuItem(list_menu_item) => list_menu_item.is_focusable()
+        };
+        if is_focusable && !self.is_focused {
+            self.is_focused = true;
+        }
         match selected_item {
             MenuItemEnum::BasicMenuItem(basic_menu_item) => {
-                basic_menu_item.press();
+                basic_menu_item.press(self.is_focused);
             }
-            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.press(),
+            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.press(self.is_focused),
+            MenuItemEnum::ListMenuItem(list_menu_item) => list_menu_item.press(self.is_focused)
         }
     }
 }
@@ -136,6 +156,7 @@ mod tests {
     use crate::menu_items::basic_menu_item::BasicMenuItem;
     use std::cell::RefCell;
     use std::rc::Rc;
+    use crate::menu_items::list_menu_item::ListMenuItem;
 
     #[test]
     fn can_create_simple_menu() {
@@ -235,7 +256,7 @@ mod tests {
     }
 
     #[test]
-    fn pressing_basic_item_does_nothing() {
+    fn basic_item_is_usable() {
         let items: Vec<MenuItemEnum> = vec![MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
             String::from("Item1"),
         ))];
@@ -255,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn pressing_action_item_triggers_action() {
+    fn action_item_is_usable() {
         let clicked_count = Rc::new(RefCell::new(0));
         let clicked_count_clone = Rc::clone(&clicked_count);
         let mut on_click = move || {
@@ -283,13 +304,55 @@ mod tests {
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
         assert_eq!(*clicked_count.borrow(), 1);
     }
+
+    #[test]
+    fn list_item_is_usable() {
+        let list_entries: Vec<String> = vec!["Elem1".to_string(), "Elem2".to_string(), "Elem3".to_string()];
+
+        let items: Vec<MenuItemEnum> = vec![
+            MenuItemEnum::ListMenuItem(ListMenuItem::new(String::from("Item1"), list_entries).unwrap()),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+        ];
+        let mut menu = Menu::new(16, 2, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.items.len(), 2);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: Elem1   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, false);
+
+        menu.press();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: Elem1   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
+
+        // Can't move while focused
+        assert_eq!(menu.go_up(), false);
+        assert_eq!(menu.selected_item_idx, 0);
+        assert_eq!(menu.go_down(), false);
+        assert_eq!(menu.selected_item_idx, 0);
+
+        // TODO left and right
+
+        // TODO enter
+        // TODO back without enter
+
+        // TODO check values
+    }
+
+    // TODO test list
 }
 
 // TODO improvements:
-// TODO list item
 // TODO range item (int, float)
 // TODO Toggle item + with customizable labels
 // TODO input item
 // TODO charset input item
 // TODO submenus
 // TODO screens
+// TODO horizontal scrolling if overflow

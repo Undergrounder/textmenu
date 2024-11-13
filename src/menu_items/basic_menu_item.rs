@@ -11,11 +11,15 @@ impl BasicMenuItem {
 }
 
 impl MenuItem for BasicMenuItem {
-    fn get_label(&self) -> &String {
-        &self.label
+    fn get_label(&self) -> String {
+        self.label.clone()
     }
 
-    fn press(&mut self) -> () {}
+    fn press(&mut self, _is_focused: bool) -> () {}
+
+    fn is_focusable(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]

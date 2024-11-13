@@ -12,12 +12,16 @@ impl<'a> ActionMenuItem<'a> {
 }
 
 impl<'a> MenuItem for ActionMenuItem<'a> {
-    fn get_label(&self) -> &String {
-        &self.label
+    fn get_label(&self) -> String {
+        self.label.clone()
     }
 
-    fn press(&mut self) -> () {
+    fn press(&mut self, _is_focused: bool) -> () {
         (self.on_pressed)();
+    }
+
+    fn is_focusable(&self) -> bool {
+        false
     }
 }
 #[cfg(test)]
@@ -37,10 +41,10 @@ mod tests {
         assert_eq!(item.get_label(), "label");
         assert_eq!(*clicked_count.borrow(), 0);
 
-        item.press();
+        item.press(false);
         assert_eq!(*clicked_count.borrow(), 1);
 
-        item.press();
+        item.press(false);
         assert_eq!(*clicked_count.borrow(), 2);
     }
 }
