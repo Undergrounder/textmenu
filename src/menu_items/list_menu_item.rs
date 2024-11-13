@@ -10,11 +10,11 @@ impl ListMenuItem {
     pub fn new(label: String, entries: Vec<String>) -> Result<ListMenuItem, String> {
         if entries.is_empty() {
             Err("At least one entry required".to_string())
-        } else{
+        } else {
             let menu_item = ListMenuItem {
                 label,
                 entries,
-                selected_entry_idx: 0
+                selected_entry_idx: 0,
             };
             Ok(menu_item)
         }
@@ -27,7 +27,7 @@ impl ListMenuItem {
     pub fn set_selected_entry_idx(&mut self, selected_entry_idx: usize) -> Result<(), String> {
         if selected_entry_idx >= self.entries.len() {
             Err("Selected entry idx must be between 0 and entries.len()".to_string())
-        }else{
+        } else {
             self.selected_entry_idx = selected_entry_idx;
             Ok(())
         }
@@ -36,7 +36,7 @@ impl ListMenuItem {
     pub fn select_next_entry(&mut self) {
         self.selected_entry_idx = if self.selected_entry_idx == self.entries.len() - 1 {
             0
-        }else {
+        } else {
             self.selected_entry_idx + 1
         }
     }
@@ -44,7 +44,7 @@ impl ListMenuItem {
     pub fn select_prev_entry(&mut self) {
         self.selected_entry_idx = if self.selected_entry_idx == 0 {
             self.entries.len() - 1
-        }else {
+        } else {
             self.selected_entry_idx - 1
         }
     }
@@ -74,7 +74,11 @@ mod tests {
 
     #[test]
     fn select_next_entry_works() {
-        let list_entries: Vec<String> = vec!["Elem1".to_string(), "Elem2".to_string(), "Elem3".to_string()];
+        let list_entries: Vec<String> = vec![
+            "Elem1".to_string(),
+            "Elem2".to_string(),
+            "Elem3".to_string(),
+        ];
         let mut item = ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -94,7 +98,11 @@ mod tests {
 
     #[test]
     fn select_prev_entry_works() {
-        let list_entries: Vec<String> = vec!["Elem1".to_string(), "Elem2".to_string(), "Elem3".to_string()];
+        let list_entries: Vec<String> = vec![
+            "Elem1".to_string(),
+            "Elem2".to_string(),
+            "Elem3".to_string(),
+        ];
         let mut item = ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -114,7 +122,11 @@ mod tests {
 
     #[test]
     fn set_selected_entry_idx_works() {
-        let list_entries: Vec<String> = vec!["Elem1".to_string(), "Elem2".to_string(), "Elem3".to_string()];
+        let list_entries: Vec<String> = vec![
+            "Elem1".to_string(),
+            "Elem2".to_string(),
+            "Elem3".to_string(),
+        ];
         let mut item = ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -127,9 +139,12 @@ mod tests {
         assert_eq!(item.get_label(), "label: Elem3");
         assert_eq!(item.get_selected_entry_idx(), 2);
 
-        if let Err(error_msg) = item.set_selected_entry_idx(3){
-            assert_eq!(error_msg, "Selected entry idx must be between 0 and entries.len()");
-        }else{
+        if let Err(error_msg) = item.set_selected_entry_idx(3) {
+            assert_eq!(
+                error_msg,
+                "Selected entry idx must be between 0 and entries.len()"
+            );
+        } else {
             panic!("set_selected_entry_idx should return an error");
         }
     }

@@ -64,11 +64,7 @@ impl<'a> Menu<'a> {
         } else {
             " "
         };
-        let label = match item {
-            MenuItemEnum::BasicMenuItem(basic_menu_item) => basic_menu_item.get_label(),
-            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.get_label(),
-            MenuItemEnum::ListMenuItem(action_list_menu_item) => action_list_menu_item.get_label(),
-        };
+        let label = item.get_label();
         let max_length_label = self.char_width - 2;
         let label_trimmed = if label.len() > max_length_label {
             &label[..max_length_label]
@@ -127,25 +123,12 @@ impl<'a> Menu<'a> {
     }
 
     pub fn press(&mut self) -> () {
-        // TODO use traits or dynamic dispatch
         let selected_item = &mut self.items[self.selected_item_idx];
-        let is_focusable: bool = match selected_item {
-            MenuItemEnum::BasicMenuItem(basic_menu_item) => {
-                basic_menu_item.is_focusable()
-            }
-            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.is_focusable(),
-            MenuItemEnum::ListMenuItem(list_menu_item) => list_menu_item.is_focusable()
-        };
+        let is_focusable: bool = selected_item.is_focusable();
         if is_focusable && !self.is_focused {
             self.is_focused = true;
         }
-        match selected_item {
-            MenuItemEnum::BasicMenuItem(basic_menu_item) => {
-                basic_menu_item.press(self.is_focused);
-            }
-            MenuItemEnum::ActionMenuItem(action_menu_item) => action_menu_item.press(self.is_focused),
-            MenuItemEnum::ListMenuItem(list_menu_item) => list_menu_item.press(self.is_focused)
-        }
+        selected_item.press(self.is_focused);
     }
 }
 
@@ -154,9 +137,9 @@ mod tests {
     use super::*;
     use crate::menu_items::action_menu_item::ActionMenuItem;
     use crate::menu_items::basic_menu_item::BasicMenuItem;
+    use crate::menu_items::list_menu_item::ListMenuItem;
     use std::cell::RefCell;
     use std::rc::Rc;
-    use crate::menu_items::list_menu_item::ListMenuItem;
 
     #[test]
     fn can_create_simple_menu() {
@@ -307,10 +290,16 @@ mod tests {
 
     #[test]
     fn list_item_is_usable() {
-        let list_entries: Vec<String> = vec!["Elem1".to_string(), "Elem2".to_string(), "Elem3".to_string()];
+        let list_entries: Vec<String> = vec![
+            "Elem1".to_string(),
+            "Elem2".to_string(),
+            "Elem3".to_string(),
+        ];
 
         let items: Vec<MenuItemEnum> = vec![
-            MenuItemEnum::ListMenuItem(ListMenuItem::new(String::from("Item1"), list_entries).unwrap()),
+            MenuItemEnum::ListMenuItem(
+                ListMenuItem::new(String::from("Item1"), list_entries).unwrap(),
+            ),
             MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
         ];
         let mut menu = Menu::new(16, 2, items).unwrap();
