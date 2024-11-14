@@ -55,8 +55,10 @@ impl<'a> Menu<'a> {
     }
 
     fn generate_line_to_render(&self, item_idx: usize, item: &MenuItemEnum) -> String {
-        let selection_str: &str = if item_idx == self.selected_item_idx {
-            if self.is_focused {
+        let is_selected_item = item_idx == self.selected_item_idx;
+        let is_item_focused = is_selected_item && self.is_focused;
+        let selection_str: &str = if is_selected_item {
+            if is_item_focused {
                 "←"
             } else {
                 "→"
@@ -64,7 +66,7 @@ impl<'a> Menu<'a> {
         } else {
             " "
         };
-        let label = item.get_label();
+        let label = item.get_label(is_item_focused);
         let max_length_label = self.char_width - 2;
         let label_trimmed = if label.len() > max_length_label {
             &label[..max_length_label]
@@ -161,19 +163,15 @@ impl<'a> Menu<'a> {
         }
     }
 
-    fn enter_on_selected_item(&mut self) -> bool {
-        let is_focused = self.is_focused;
-        let selected_item = self.get_mut_selected_item();
-        selected_item.enter(is_focused)
-    }
-
     pub fn enter(&mut self) -> bool {
+        let was_focused = self.is_focused;
         let selected_item = self.get_mut_selected_item();
         let is_focusable: bool = selected_item.is_focusable();
-        if is_focusable && !self.is_focused {
-            self.is_focused = true;
-        }
-        self.enter_on_selected_item()
+        let is_focused = if is_focusable { !was_focused } else { false };
+        self.is_focused = is_focused;
+
+        let selected_item = self.get_mut_selected_item();
+        selected_item.enter(is_focused, was_focused)
     }
 }
 
@@ -386,7 +384,7 @@ mod tests {
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("→Item1: Elem1   "));
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
-        assert_eq!(menu.is_focused, true);
+        assert_eq!(menu.is_focused, false);
 
         menu.enter();
         let lines_to_render = menu.generate_lines_to_render();
@@ -407,9 +405,7 @@ mod tests {
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("→Item1: Elem3   "));
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
-        assert_eq!(menu.is_focused, true);
-
-        // TODO check values
+        assert_eq!(menu.is_focused, false);
     }
 }
 

@@ -12,11 +12,11 @@ impl<'a> ActionMenuItem<'a> {
 }
 
 impl<'a> MenuItem for ActionMenuItem<'a> {
-    fn get_label(&self) -> String {
+    fn get_label(&self, _is_focused: bool) -> String {
         self.label.clone()
     }
 
-    fn enter(&mut self, _is_focused: bool) -> bool {
+    fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
         (self.on_pressed)()
     }
 
@@ -51,13 +51,13 @@ mod tests {
             true
         };
         let mut item = ActionMenuItem::new(String::from("label"), &mut on_click);
-        assert_eq!(item.get_label(), "label");
+        assert_eq!(item.get_label(false), "label");
         assert_eq!(*clicked_count.borrow(), 0);
 
-        item.enter(false);
+        item.enter(true, false);
         assert_eq!(*clicked_count.borrow(), 1);
 
-        item.enter(false);
+        item.enter(true, false);
         assert_eq!(*clicked_count.borrow(), 2);
 
         assert_eq!(item.left(), false);

@@ -11,11 +11,11 @@ impl BasicMenuItem {
 }
 
 impl MenuItem for BasicMenuItem {
-    fn get_label(&self) -> String {
+    fn get_label(&self, _is_focused: bool) -> String {
         self.label.clone()
     }
 
-    fn enter(&mut self, _is_focused: bool) -> bool {
+    fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
         false
     }
 
@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn can_create_a_basic_menu_item() {
         let mut item = BasicMenuItem::new(String::from("label"));
-        assert_eq!(item.get_label(), "label");
+        assert_eq!(item.get_label(false), "label");
         assert_eq!(item.left(), false);
         assert_eq!(item.right(), false);
         assert_eq!(item.back(), true);
