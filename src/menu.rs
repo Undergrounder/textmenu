@@ -181,6 +181,7 @@ mod tests {
     use crate::menu_items::action_menu_item::ActionMenuItem;
     use crate::menu_items::basic_menu_item::BasicMenuItem;
     use crate::menu_items::list_menu_item::ListMenuItem;
+    use crate::menu_items::toggle_menu_item::ToggleMenuItem;
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -407,11 +408,39 @@ mod tests {
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
         assert_eq!(menu.is_focused, false);
     }
+
+    #[test]
+    fn toggle_item_is_usable() {
+        let items: Vec<MenuItemEnum> = vec![
+            MenuItemEnum::ToggleMenuItem(ToggleMenuItem::new(String::from("Item1"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+        ];
+        let mut menu = Menu::new(16, 2, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.items.len(), 2);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: OFF     "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: ON      "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: OFF     "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+    }
 }
 
 // TODO improvements:
 // TODO range item (int, float)
-// TODO Toggle item + with customizable labels
 // TODO input item
 // TODO charset input item
 // TODO submenus
