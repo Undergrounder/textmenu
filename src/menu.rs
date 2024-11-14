@@ -201,6 +201,91 @@ mod tests {
     }
 
     #[test]
+    fn can_create_big_menu() {
+        let items: Vec<MenuItemEnum> = vec![
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item1"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item2"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item3"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item4"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item5"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item6"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item7"),
+            )),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
+                String::from("Item8"),
+            ))
+        ];
+        let mut menu = Menu::new(16, 5, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 5);
+        assert_eq!(menu.items.len(), 8);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 5);
+        assert_eq!(lines_to_render[0], String::from("→Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(lines_to_render[2], String::from(" Item3          "));
+        assert_eq!(lines_to_render[3], String::from(" Item4          "));
+        assert_eq!(lines_to_render[4], String::from(" Item5         ↓"));
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 5);
+        assert_eq!(lines_to_render[0], String::from(" Item1          "));
+        assert_eq!(lines_to_render[1], String::from("→Item2          "));
+        assert_eq!(lines_to_render[2], String::from(" Item3          "));
+        assert_eq!(lines_to_render[3], String::from(" Item4          "));
+        assert_eq!(lines_to_render[4], String::from(" Item5         ↓"));
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 5);
+        assert_eq!(lines_to_render[0], String::from(" Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(lines_to_render[2], String::from("→Item3          "));
+        assert_eq!(lines_to_render[3], String::from(" Item4          "));
+        assert_eq!(lines_to_render[4], String::from(" Item5         ↓"));
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 5);
+        assert_eq!(lines_to_render[0], String::from(" Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(lines_to_render[2], String::from(" Item3          "));
+        assert_eq!(lines_to_render[3], String::from("→Item4          "));
+        assert_eq!(lines_to_render[4], String::from(" Item5         ↓"));
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 5);
+        assert_eq!(lines_to_render[0], String::from(" Item1          "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(lines_to_render[2], String::from(" Item3          "));
+        assert_eq!(lines_to_render[3], String::from(" Item4          "));
+        assert_eq!(lines_to_render[4], String::from("→Item5         ↓"));
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 3);
+        assert_eq!(lines_to_render[0], String::from("→Item6         ↑"));
+        assert_eq!(lines_to_render[1], String::from(" Item7          "));
+        assert_eq!(lines_to_render[2], String::from(" Item8          "));
+    }
+
+    #[test]
     fn can_create_complex_menu() {
         let items: Vec<MenuItemEnum> = vec![
             MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))),
