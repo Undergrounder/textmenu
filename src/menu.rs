@@ -96,7 +96,7 @@ impl<'a> Menu<'a> {
         )
     }
 
-    pub fn go_up(&mut self) -> bool {
+    pub fn up(&mut self) -> bool {
         if self.is_focused {
             false
         } else if let Some(new_selected_item_idx) = self.selected_item_idx.checked_sub(1) {
@@ -107,7 +107,7 @@ impl<'a> Menu<'a> {
         }
     }
 
-    pub fn go_down(&mut self) -> bool {
+    pub fn down(&mut self) -> bool {
         if self.is_focused {
             false
         } else if let Some(new_selected_item_idx) = self.selected_item_idx.checked_add(1) {
@@ -122,13 +122,58 @@ impl<'a> Menu<'a> {
         }
     }
 
-    pub fn press(&mut self) -> () {
-        let selected_item = &mut self.items[self.selected_item_idx];
+    pub fn left(&mut self) -> bool {
+        if self.is_focused {
+            let selected_item = self.get_mut_selected_item();
+            selected_item.left()
+        } else {
+            false
+        }
+    }
+
+    pub fn right(&mut self) -> bool {
+        if self.is_focused {
+            let selected_item = self.get_mut_selected_item();
+            selected_item.right()
+        } else {
+            false
+        }
+    }
+
+    fn get_mut_selected_item(&mut self) -> &mut MenuItemEnum<'a> {
+        &mut self.items[self.selected_item_idx]
+    }
+
+    fn back_on_selected_item(&mut self) -> bool {
+        let selected_item = self.get_mut_selected_item();
+        selected_item.back()
+    }
+
+    pub fn back(&mut self) -> bool {
+        if self.is_focused {
+            let item_back_result = self.back_on_selected_item();
+            if item_back_result {
+                self.is_focused = false
+            }
+            item_back_result
+        } else {
+            false
+        }
+    }
+
+    fn enter_on_selected_item(&mut self) -> bool {
+        let is_focused = self.is_focused;
+        let selected_item = self.get_mut_selected_item();
+        selected_item.enter(is_focused)
+    }
+
+    pub fn enter(&mut self) -> bool {
+        let selected_item = self.get_mut_selected_item();
         let is_focusable: bool = selected_item.is_focusable();
         if is_focusable && !self.is_focused {
             self.is_focused = true;
         }
-        selected_item.press(self.is_focused);
+        self.enter_on_selected_item()
     }
 }
 
@@ -175,36 +220,36 @@ mod tests {
         assert_eq!(lines_to_render[0], String::from("→Item1          "));
         assert_eq!(lines_to_render[1], String::from(" Item2         ↓"));
 
-        assert_eq!(menu.go_up(), false);
+        assert_eq!(menu.up(), false);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("→Item1          "));
         assert_eq!(lines_to_render[1], String::from(" Item2         ↓"));
 
-        assert_eq!(menu.go_down(), true);
+        assert_eq!(menu.down(), true);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from(" Item1          "));
         assert_eq!(lines_to_render[1], String::from("→Item2         ↓"));
 
-        assert_eq!(menu.go_down(), true);
+        assert_eq!(menu.down(), true);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("→Item3         ↑"));
         assert_eq!(lines_to_render[1], String::from(" Item4         ↓"));
 
-        assert_eq!(menu.go_down(), true);
+        assert_eq!(menu.down(), true);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from(" Item3         ↑"));
         assert_eq!(lines_to_render[1], String::from("→Item4         ↓"));
 
-        assert_eq!(menu.go_down(), true);
+        assert_eq!(menu.down(), true);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 1);
         assert_eq!(lines_to_render[0], String::from("→Item5         ↑"));
 
-        assert_eq!(menu.go_up(), true);
+        assert_eq!(menu.up(), true);
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from(" Item3         ↑"));
@@ -252,7 +297,7 @@ mod tests {
         assert_eq!(lines_to_render.len(), 1);
         assert_eq!(lines_to_render[0], String::from("→Item1          "));
 
-        menu.press();
+        menu.enter();
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 1);
         assert_eq!(lines_to_render[0], String::from("→Item1          "));
@@ -264,6 +309,7 @@ mod tests {
         let clicked_count_clone = Rc::clone(&clicked_count);
         let mut on_click = move || {
             *clicked_count_clone.borrow_mut() += 1;
+            true
         };
         let items: Vec<MenuItemEnum> = vec![
             MenuItemEnum::ActionMenuItem(ActionMenuItem::new(String::from("Item1"), &mut on_click)),
@@ -280,7 +326,7 @@ mod tests {
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
         assert_eq!(*clicked_count.borrow(), 0);
 
-        menu.press();
+        menu.enter();
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("→Item1          "));
@@ -312,8 +358,10 @@ mod tests {
         assert_eq!(lines_to_render[0], String::from("→Item1: Elem1   "));
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
         assert_eq!(menu.is_focused, false);
+        assert_eq!(menu.left(), false);
+        assert_eq!(menu.right(), false);
 
-        menu.press();
+        menu.enter();
         let lines_to_render = menu.generate_lines_to_render();
         assert_eq!(lines_to_render.len(), 2);
         assert_eq!(lines_to_render[0], String::from("←Item1: Elem1   "));
@@ -321,20 +369,48 @@ mod tests {
         assert_eq!(menu.is_focused, true);
 
         // Can't move while focused
-        assert_eq!(menu.go_up(), false);
+        assert_eq!(menu.up(), false);
         assert_eq!(menu.selected_item_idx, 0);
-        assert_eq!(menu.go_down(), false);
+        assert_eq!(menu.down(), false);
         assert_eq!(menu.selected_item_idx, 0);
 
-        // TODO left and right
+        assert_eq!(menu.right(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: Elem2   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
 
-        // TODO enter
-        // TODO back without enter
+        assert_eq!(menu.back(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: Elem1   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: Elem1   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
+
+        assert_eq!(menu.left(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: Elem3   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: Elem3   "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+        assert_eq!(menu.is_focused, true);
 
         // TODO check values
     }
-
-    // TODO test list
 }
 
 // TODO improvements:

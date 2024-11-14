@@ -15,9 +15,23 @@ impl MenuItem for BasicMenuItem {
         self.label.clone()
     }
 
-    fn press(&mut self, _is_focused: bool) -> () {}
+    fn enter(&mut self, _is_focused: bool) -> bool {
+        false
+    }
 
     fn is_focusable(&self) -> bool {
+        false
+    }
+
+    fn back(&mut self) -> bool {
+        true
+    }
+
+    fn left(&mut self) -> bool {
+        false
+    }
+
+    fn right(&mut self) -> bool {
         false
     }
 }
@@ -28,7 +42,11 @@ mod tests {
 
     #[test]
     fn can_create_a_basic_menu_item() {
-        let item = BasicMenuItem::new(String::from("label"));
+        let mut item = BasicMenuItem::new(String::from("label"));
         assert_eq!(item.get_label(), "label");
+        assert_eq!(item.left(), false);
+        assert_eq!(item.right(), false);
+        assert_eq!(item.back(), true);
+        assert_eq!(item.is_focusable(), false);
     }
 }

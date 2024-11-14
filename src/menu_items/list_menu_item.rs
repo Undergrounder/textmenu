@@ -59,11 +59,26 @@ impl MenuItem for ListMenuItem {
         format!("{}: {}", &self.label, self.get_selected_entry())
     }
 
-    fn press(&mut self, _is_focused: bool) -> () {
+    fn enter(&mut self, _is_focused: bool) -> bool {
         // TODO
+        true
     }
 
     fn is_focusable(&self) -> bool {
+        true
+    }
+
+    fn back(&mut self) -> bool {
+        true
+    }
+
+    fn left(&mut self) -> bool {
+        self.select_prev_entry();
+        true
+    }
+
+    fn right(&mut self) -> bool {
+        self.select_next_entry();
         true
     }
 }
