@@ -181,6 +181,7 @@ mod tests {
     use crate::menu_items::action_menu_item::ActionMenuItem;
     use crate::menu_items::basic_menu_item::BasicMenuItem;
     use crate::menu_items::list_menu_item::ListMenuItem;
+    use crate::menu_items::range_menu_item::RangeMenuItem;
     use crate::menu_items::toggle_menu_item::ToggleMenuItem;
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -203,30 +204,14 @@ mod tests {
     #[test]
     fn can_create_big_menu() {
         let items: Vec<MenuItemEnum> = vec![
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item1"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item2"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item3"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item4"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item5"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item6"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item7"),
-            )),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(
-                String::from("Item8"),
-            ))
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item1"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item3"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item4"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item5"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item6"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item7"))),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item8"))),
         ];
         let mut menu = Menu::new(16, 5, items).unwrap();
         assert_eq!(menu.char_width, 16);
@@ -522,12 +507,63 @@ mod tests {
         assert_eq!(lines_to_render[0], String::from("→Item1: OFF     "));
         assert_eq!(lines_to_render[1], String::from(" Item2          "));
     }
+
+    #[test]
+    fn range_item_is_usable() {
+        let items: Vec<MenuItemEnum> = vec![
+            MenuItemEnum::RangeMenuItem(
+                RangeMenuItem::new(String::from("Item1"), 3, 10, 1).unwrap(),
+            ),
+            MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Item2"))),
+        ];
+        let mut menu = Menu::new(16, 2, items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.items.len(), 2);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: 3       "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: 3       "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.left();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: 10      "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.left();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: 9       "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.right();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("←Item1: 10      "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+
+        menu.enter();
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], String::from("→Item1: 10      "));
+        assert_eq!(lines_to_render[1], String::from(" Item2          "));
+    }
 }
 
 // TODO improvements:
-// TODO range item (int, float)
 // TODO input item
 // TODO charset input item
 // TODO submenus
 // TODO screens
 // TODO horizontal scrolling if overflow
+// TODO disable functionality via features
+// TODO nostd
+// TODO more range items (u8, signed, float, ....)
