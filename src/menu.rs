@@ -1,5 +1,4 @@
 use crate::menu_items::menu_item::MenuItem;
-use crate::menu_items::menu_item_enum::MenuItemEnum;
 use core::fmt::Write;
 use heapless::{String, Vec};
 
@@ -13,7 +12,7 @@ pub struct Menu<
 > {
     pub char_width: usize,
     pub char_height: usize,
-    pub items: &'a mut [MenuItemEnum<'a>],
+    pub items: &'a mut [&'a mut dyn MenuItem],
     // View state
     pub selected_item_idx: usize,
     pub is_focused: bool,
@@ -27,7 +26,7 @@ impl<
     > Menu<'a, CHAR_WIDTH_CONST, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
 {
     pub fn new(
-        items: &'a mut [MenuItemEnum<'a>],
+        items: &'a mut [&'a mut dyn MenuItem],
     ) -> Result<Menu<CHAR_WIDTH_CONST, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str>
     {
         if LINE_BYTES_SIZE_CONST != CHAR_WIDTH_CONST * BYTES_PER_CHAR {
@@ -65,7 +64,7 @@ impl<
         let visible_items = &self.items[top_visible_item_idx..bottom_idx];
         for (item_idx, item) in visible_items.iter().enumerate() {
             let corrected_item_idx = item_idx + top_visible_item_idx;
-            let line_to_render = self.generate_line_to_render(corrected_item_idx, item);
+            let line_to_render = self.generate_line_to_render(corrected_item_idx, *item);
             lines_to_render.push(line_to_render).unwrap();
         }
 
@@ -75,7 +74,7 @@ impl<
     fn generate_line_to_render(
         &self,
         item_idx: usize,
-        item: &MenuItemEnum,
+        item: &dyn MenuItem,
     ) -> String<LINE_BYTES_SIZE_CONST> {
         let is_selected_item = item_idx == self.selected_item_idx;
         let is_item_focused = is_selected_item && self.is_focused;
@@ -168,8 +167,8 @@ impl<
         }
     }
 
-    fn get_mut_selected_item(&mut self) -> &mut MenuItemEnum<'a> {
-        &mut self.items[self.selected_item_idx]
+    fn get_mut_selected_item(&mut self) -> &mut dyn MenuItem {
+        self.items[self.selected_item_idx]
     }
 
     fn back_on_selected_item(&mut self) -> bool {
@@ -214,8 +213,7 @@ mod tests {
 
     #[test]
     fn can_create_simple_menu() {
-        let mut items: [MenuItemEnum; 1] =
-            [MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1"))];
+        let mut items: [&mut dyn MenuItem; 1] = [&mut BasicMenuItem::new("Item1")];
         let menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
         assert_eq!(menu.char_height, 2);
@@ -228,15 +226,15 @@ mod tests {
 
     #[test]
     fn can_create_big_menu() {
-        let mut items: [MenuItemEnum; 8] = [
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item3")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item4")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item5")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item6")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item7")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item8")),
+        let mut items: [&mut dyn MenuItem; 8] = [
+            &mut BasicMenuItem::new("Item1"),
+            &mut BasicMenuItem::new("Item2"),
+            &mut BasicMenuItem::new("Item3"),
+            &mut BasicMenuItem::new("Item4"),
+            &mut BasicMenuItem::new("Item5"),
+            &mut BasicMenuItem::new("Item6"),
+            &mut BasicMenuItem::new("Item7"),
+            &mut BasicMenuItem::new("Item8"),
         ];
         let mut menu: Menu<16, 5, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
@@ -297,12 +295,12 @@ mod tests {
 
     #[test]
     fn can_create_complex_menu() {
-        let mut items: [MenuItemEnum; 5] = [
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item3")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item4")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item5")),
+        let mut items: [&mut dyn MenuItem; 5] = [
+            &mut BasicMenuItem::new("Item1"),
+            &mut BasicMenuItem::new("Item2"),
+            &mut BasicMenuItem::new("Item3"),
+            &mut BasicMenuItem::new("Item4"),
+            &mut BasicMenuItem::new("Item5"),
         ];
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
@@ -352,8 +350,7 @@ mod tests {
 
     #[test]
     fn panics_if_invalid_char_width() {
-        let mut items: [MenuItemEnum; 1] =
-            [MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1"))];
+        let mut items: [&mut dyn MenuItem; 1] = [&mut BasicMenuItem::new("Item1")];
         let menu_result: Result<Menu<1, 2, { 1 * BYTES_PER_CHAR }>, &str> = Menu::new(&mut items);
         if let Err(error) = menu_result {
             assert_eq!(error, "Invalid menu char width. At least 3 chars required.")
@@ -364,8 +361,7 @@ mod tests {
 
     #[test]
     fn panics_if_invalid_char_height() {
-        let mut items: [MenuItemEnum; 1] =
-            [MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1"))];
+        let mut items: [&mut dyn MenuItem; 1] = [&mut BasicMenuItem::new("Item1")];
         let menu_result: Result<Menu<16, 1, { 16 * BYTES_PER_CHAR }>, &str> = Menu::new(&mut items);
         if let Err(error) = menu_result {
             assert_eq!(
@@ -379,8 +375,7 @@ mod tests {
 
     #[test]
     fn basic_item_is_usable() {
-        let mut items: [MenuItemEnum; 1] =
-            [MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item1"))];
+        let mut items: [&mut dyn MenuItem; 1] = [&mut BasicMenuItem::new("Item1")];
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
         assert_eq!(menu.char_height, 2);
@@ -404,9 +399,9 @@ mod tests {
             *clicked_count_clone.borrow_mut() += 1;
             true
         };
-        let mut items: [MenuItemEnum; 2] = [
-            MenuItemEnum::ActionMenuItem(ActionMenuItem::new("Item1", &mut on_click)),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
+        let mut items: [&mut dyn MenuItem; 2] = [
+            &mut ActionMenuItem::new("Item1", &mut on_click),
+            &mut BasicMenuItem::new("Item2"),
         ];
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
@@ -431,9 +426,9 @@ mod tests {
     fn list_item_is_usable() {
         let list_entries = ["Elem1", "Elem2", "Elem3"];
 
-        let mut items: [MenuItemEnum; 2] = [
-            MenuItemEnum::ListMenuItem(ListMenuItem::new("Item1", &list_entries).unwrap()),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
+        let mut items: [&mut dyn MenuItem; 2] = [
+            &mut ListMenuItem::new("Item1", &list_entries).unwrap(),
+            &mut BasicMenuItem::new("Item2"),
         ];
 
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
@@ -500,9 +495,9 @@ mod tests {
 
     #[test]
     fn toggle_item_is_usable() {
-        let mut items: [MenuItemEnum; 2] = [
-            MenuItemEnum::ToggleMenuItem(ToggleMenuItem::new("Item1")),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
+        let mut items: [&mut dyn MenuItem; 2] = [
+            &mut ToggleMenuItem::new("Item1"),
+            &mut BasicMenuItem::new("Item2"),
         ];
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
@@ -529,9 +524,9 @@ mod tests {
 
     #[test]
     fn range_item_is_usable() {
-        let mut items: [MenuItemEnum; 2] = [
-            MenuItemEnum::RangeMenuItem(RangeMenuItem::new("Item1", 3, 10, 1).unwrap()),
-            MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Item2")),
+        let mut items: [&mut dyn MenuItem; 2] = [
+            &mut RangeMenuItem::new("Item1", 3, 10, 1).unwrap(),
+            &mut BasicMenuItem::new("Item2"),
         ];
         let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
         assert_eq!(menu.char_width, 16);
