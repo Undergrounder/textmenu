@@ -1,4 +1,6 @@
-use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use core::fmt::Write;
+use heapless::String;
 
 pub struct ToggleMenuItem<'a> {
     label: &'a str,
@@ -7,7 +9,7 @@ pub struct ToggleMenuItem<'a> {
     value: bool,
 }
 
-impl <'a> ToggleMenuItem<'a> {
+impl<'a> ToggleMenuItem<'a> {
     pub fn new(label: &str) -> ToggleMenuItem {
         ToggleMenuItem {
             label,
@@ -22,15 +24,16 @@ impl <'a> ToggleMenuItem<'a> {
     }
 }
 
-impl <'a> MenuItem for ToggleMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> &str {
+impl<'a> MenuItem for ToggleMenuItem<'a> {
+    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
         let value_text = if self.value {
             self.text_true
         } else {
             self.text_false
         };
-        // TODO nostd format!("{}: {}", self.label, &value_text)
-        value_text
+        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        write!(label_str, "{}: {}", self.label, &value_text).unwrap();
+        label_str
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {

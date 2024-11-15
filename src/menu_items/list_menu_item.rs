@@ -1,14 +1,16 @@
-use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use core::fmt::Write;
+use heapless::String;
 
 pub struct ListMenuItem<'a> {
     label: &'a str,
-    entries: &'a[&'a str],
+    entries: &'a [&'a str],
     selected_entry_idx: usize,
     focus_selected_entry_idx: usize,
 }
 
-impl <'a> ListMenuItem<'a> {
-    pub fn new(label: &'a str, entries: &'a[&'a str]) -> Result<ListMenuItem, &'static str> {
+impl<'a> ListMenuItem<'a> {
+    pub fn new(label: &'a str, entries: &'a [&'a str]) -> Result<ListMenuItem<'a>, &'static str> {
         if entries.is_empty() {
             Err("At least one entry required")
         } else {
@@ -26,7 +28,10 @@ impl <'a> ListMenuItem<'a> {
         self.selected_entry_idx
     }
 
-    pub fn set_selected_entry_idx(&mut self, selected_entry_idx: usize) -> Result<(), &'static str> {
+    pub fn set_selected_entry_idx(
+        &mut self,
+        selected_entry_idx: usize,
+    ) -> Result<(), &'static str> {
         if selected_entry_idx >= self.entries.len() {
             Err("Selected entry idx must be between 0 and entries.len()")
         } else {
@@ -79,15 +84,17 @@ impl <'a> ListMenuItem<'a> {
     }
 }
 
-impl <'a> MenuItem for ListMenuItem<'a> {
-    fn get_label(&self, is_focused: bool) -> &str {
+impl<'a> MenuItem for ListMenuItem<'a> {
+    fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
         let selected_entry = if is_focused {
             self.get_focused_selected_entry()
         } else {
             self.get_selected_entry()
         };
-        // TODO nostd format!("{}: {}", &self.label, selected_entry)
-        selected_entry
+
+        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        write!(label_str, "{}: {}", &self.label, selected_entry).unwrap();
+        label_str
     }
 
     fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool {
@@ -125,11 +132,7 @@ mod tests {
 
     #[test]
     fn select_next_entry_works() {
-        let list_entries: [&str;3] = [
-            "Elem1",
-            "Elem2",
-            "Elem3",
-        ];
+        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
         let mut item = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
@@ -153,11 +156,7 @@ mod tests {
 
     #[test]
     fn select_prev_entry_works() {
-        let list_entries: [&str;3] = [
-            "Elem1",
-            "Elem2",
-            "Elem3",
-        ];
+        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
         let mut item = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
@@ -181,11 +180,7 @@ mod tests {
 
     #[test]
     fn set_selected_entry_idx_works() {
-        let list_entries: [&str;3] = [
-            "Elem1",
-            "Elem2",
-            "Elem3",
-        ];
+        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
         let mut item = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
@@ -213,11 +208,7 @@ mod tests {
 
     #[test]
     fn enter_confirms_selection() {
-        let list_entries: [&str;3] = [
-            "Elem1",
-            "Elem2",
-            "Elem3",
-        ];
+        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
         let mut item = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");

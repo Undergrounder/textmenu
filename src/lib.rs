@@ -1,7 +1,6 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
+extern crate alloc;
 
-pub mod keyboards;
 pub mod menu;
 pub mod menu_items;
-pub mod renderers;

@@ -1,18 +1,20 @@
-use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use core::str::FromStr;
+use heapless::String;
 
 pub struct BasicMenuItem<'a> {
     label: &'a str,
 }
 
-impl <'a> BasicMenuItem<'a> {
+impl<'a> BasicMenuItem<'a> {
     pub fn new(label: &str) -> BasicMenuItem {
         BasicMenuItem { label }
     }
 }
 
-impl <'a> MenuItem for BasicMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> &str {
-        self.label
+impl<'a> MenuItem for BasicMenuItem<'a> {
+    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
+        String::from_str(self.label).unwrap()
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {

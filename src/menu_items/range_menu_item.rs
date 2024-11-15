@@ -1,4 +1,6 @@
-use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use core::fmt::Write;
+use heapless::String;
 
 pub struct RangeMenuItem<'a> {
     label: &'a str,
@@ -9,7 +11,7 @@ pub struct RangeMenuItem<'a> {
     step_size: u32,
 }
 
-impl <'a> RangeMenuItem<'a> {
+impl<'a> RangeMenuItem<'a> {
     pub fn new(
         label: &'a str,
         min_value: u32,
@@ -79,15 +81,17 @@ impl <'a> RangeMenuItem<'a> {
     }
 }
 
-impl <'a> MenuItem for RangeMenuItem<'a> {
-    fn get_label(&self, is_focused: bool) -> &str {
-        let _value = if is_focused {
+impl<'a> MenuItem for RangeMenuItem<'a> {
+    fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
+        let value = if is_focused {
             &self.focused_value
         } else {
             &self.value
         };
-        // TODO nostd format!("{}: {}", self.label, value)
-        self.label
+
+        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        write!(label_str, "{}: {}", self.label, value).unwrap();
+        label_str
     }
 
     fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool {
@@ -123,8 +127,7 @@ mod tests {
     use super::*;
 
     fn assert_new_error(expected_error_msg: &str, min_value: u32, max_value: u32, step_size: u32) {
-        let range_menu_item_result =
-            RangeMenuItem::new("label", min_value, max_value, step_size);
+        let range_menu_item_result = RangeMenuItem::new("label", min_value, max_value, step_size);
         if let Err(error_msg) = range_menu_item_result {
             assert_eq!(error_msg, expected_error_msg);
         } else {
@@ -154,8 +157,7 @@ mod tests {
 
     #[test]
     fn item_works_as_expected() {
-        let mut item: RangeMenuItem =
-            RangeMenuItem::new("label", 0, 100, 20).unwrap();
+        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 100, 20).unwrap();
         assert_eq!(item.is_focusable(), true);
 
         assert_eq!(item.get_label(false), "label: 0");
@@ -195,8 +197,7 @@ mod tests {
 
     #[test]
     fn left_should_overflow_to_max() {
-        let mut item: RangeMenuItem =
-            RangeMenuItem::new("label", 0, 100, 20).unwrap();
+        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 100, 20).unwrap();
         item.enter(true, false);
 
         assert_eq!(item.get_label(false), "label: 0");

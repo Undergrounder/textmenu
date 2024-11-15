@@ -1,4 +1,6 @@
-use crate::menu_items::menu_item::MenuItem;
+use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use core::str::FromStr;
+use heapless::String;
 
 pub struct ActionMenuItem<'a> {
     label: &'a str,
@@ -12,8 +14,8 @@ impl<'a> ActionMenuItem<'a> {
 }
 
 impl<'a> MenuItem for ActionMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> &str {
-        self.label
+    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
+        String::from_str(self.label).unwrap()
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
@@ -36,9 +38,11 @@ impl<'a> MenuItem for ActionMenuItem<'a> {
         false
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use std::cell::RefCell;
     use std::rc::Rc;
 

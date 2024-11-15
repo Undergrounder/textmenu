@@ -6,3 +6,9 @@ edition = "2021"
 [dependencies]
 enum_dispatch = "0.3.13"
 heapless = "0.8.0"
+
+[features]
+default = ["max_label_length_50"]
+max_label_length_50 = []
+max_label_length_100 = []
+max_label_length_200 = []
