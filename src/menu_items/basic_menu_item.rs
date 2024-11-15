@@ -1,18 +1,18 @@
 use crate::menu_items::menu_item::MenuItem;
 
-pub struct BasicMenuItem {
-    label: String,
+pub struct BasicMenuItem<'a> {
+    label: &'a str,
 }
 
-impl BasicMenuItem {
-    pub fn new(label: String) -> BasicMenuItem {
+impl <'a> BasicMenuItem<'a> {
+    pub fn new(label: &str) -> BasicMenuItem {
         BasicMenuItem { label }
     }
 }
 
-impl MenuItem for BasicMenuItem {
-    fn get_label(&self, _is_focused: bool) -> String {
-        self.label.clone()
+impl <'a> MenuItem for BasicMenuItem<'a> {
+    fn get_label(&self, _is_focused: bool) -> &str {
+        self.label
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn can_create_a_basic_menu_item() {
-        let mut item = BasicMenuItem::new(String::from("label"));
+        let mut item = BasicMenuItem::new("label");
         assert_eq!(item.get_label(false), "label");
         assert_eq!(item.left(), false);
         assert_eq!(item.right(), false);

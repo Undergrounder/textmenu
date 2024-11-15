@@ -1,19 +1,19 @@
 use crate::menu_items::menu_item::MenuItem;
 
 pub struct ActionMenuItem<'a> {
-    label: String,
+    label: &'a str,
     on_pressed: &'a mut dyn FnMut() -> bool,
 }
 
 impl<'a> ActionMenuItem<'a> {
-    pub fn new(label: String, on_pressed: &'a mut dyn FnMut() -> bool) -> ActionMenuItem<'a> {
+    pub fn new(label: &'a str, on_pressed: &'a mut dyn FnMut() -> bool) -> ActionMenuItem<'a> {
         ActionMenuItem { label, on_pressed }
     }
 }
 
 impl<'a> MenuItem for ActionMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> String {
-        self.label.clone()
+    fn get_label(&self, _is_focused: bool) -> &str {
+        self.label
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
@@ -50,7 +50,7 @@ mod tests {
             *clicked_count_clone.borrow_mut() += 1;
             true
         };
-        let mut item = ActionMenuItem::new(String::from("label"), &mut on_click);
+        let mut item = ActionMenuItem::new("label", &mut on_click);
         assert_eq!(item.get_label(false), "label");
         assert_eq!(*clicked_count.borrow(), 0);
 

@@ -1,7 +1,7 @@
 use crate::menu_items::menu_item::MenuItem;
 
-pub struct RangeMenuItem {
-    label: String,
+pub struct RangeMenuItem<'a> {
+    label: &'a str,
     value: u32,
     focused_value: u32,
     max_value: u32,
@@ -9,9 +9,9 @@ pub struct RangeMenuItem {
     step_size: u32,
 }
 
-impl RangeMenuItem {
+impl <'a> RangeMenuItem<'a> {
     pub fn new(
-        label: String,
+        label: &'a str,
         min_value: u32,
         max_value: u32,
         step_size: u32,
@@ -79,14 +79,15 @@ impl RangeMenuItem {
     }
 }
 
-impl MenuItem for RangeMenuItem {
-    fn get_label(&self, is_focused: bool) -> String {
-        let value = if is_focused {
+impl <'a> MenuItem for RangeMenuItem<'a> {
+    fn get_label(&self, is_focused: bool) -> &str {
+        let _value = if is_focused {
             &self.focused_value
         } else {
             &self.value
         };
-        format!("{}: {}", self.label, value)
+        // TODO nostd format!("{}: {}", self.label, value)
+        self.label
     }
 
     fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool {
@@ -123,7 +124,7 @@ mod tests {
 
     fn assert_new_error(expected_error_msg: &str, min_value: u32, max_value: u32, step_size: u32) {
         let range_menu_item_result =
-            RangeMenuItem::new(String::from("label"), min_value, max_value, step_size);
+            RangeMenuItem::new("label", min_value, max_value, step_size);
         if let Err(error_msg) = range_menu_item_result {
             assert_eq!(error_msg, expected_error_msg);
         } else {
@@ -154,7 +155,7 @@ mod tests {
     #[test]
     fn item_works_as_expected() {
         let mut item: RangeMenuItem =
-            RangeMenuItem::new(String::from("label"), 0, 100, 20).unwrap();
+            RangeMenuItem::new("label", 0, 100, 20).unwrap();
         assert_eq!(item.is_focusable(), true);
 
         assert_eq!(item.get_label(false), "label: 0");
@@ -195,7 +196,7 @@ mod tests {
     #[test]
     fn left_should_overflow_to_max() {
         let mut item: RangeMenuItem =
-            RangeMenuItem::new(String::from("label"), 0, 100, 20).unwrap();
+            RangeMenuItem::new("label", 0, 100, 20).unwrap();
         item.enter(true, false);
 
         assert_eq!(item.get_label(false), "label: 0");
@@ -220,7 +221,7 @@ mod tests {
 
     #[test]
     fn left_should_overflow_to_min() {
-        let mut item: RangeMenuItem = RangeMenuItem::new(String::from("label"), 0, 40, 20).unwrap();
+        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 40, 20).unwrap();
         item.enter(true, false);
 
         assert_eq!(item.get_label(false), "label: 0");
@@ -252,6 +253,4 @@ mod tests {
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_value(), 20);
     }
-
-    // TODO enhance menu.ts
 }

@@ -1,17 +1,18 @@
+use heapless::String;
 use crate::menu::Menu;
 
-pub struct ConsoleRenderer<'a> {
+pub struct ConsoleRenderer<'a, const char_width_const: usize, const char_height_const: usize> {
     last_tick_id: usize,
-    last_rendered_lines: Vec<String>,
-    menu: &'a Menu<'a>,
+    last_rendered_lines: Option<[String<char_width_const>;char_height_const]>,
+    menu: &'a Menu<'a, char_width_const, char_height_const>,
 }
 
-impl<'a> ConsoleRenderer<'a> {
-    pub fn new(menu: &'a Menu<'a>) -> ConsoleRenderer<'a> {
+impl<'a, const char_width_const: usize, const char_height_const: usize> ConsoleRenderer<'a, char_width_const, char_height_const> {
+    pub fn new(menu: &'a Menu<'a, char_width_const, char_height_const>) -> ConsoleRenderer<'a, char_width_const, char_height_const> {
         ConsoleRenderer {
             last_tick_id: usize::MAX,
             menu: &menu,
-            last_rendered_lines: vec![],
+            last_rendered_lines: None,
         }
     }
 

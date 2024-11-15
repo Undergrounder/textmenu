@@ -4,12 +4,12 @@ use textmenu::menu_items::menu_item_enum::MenuItemEnum;
 use textmenu::renderers::console::ConsoleRenderer;
 
 fn main() {
-    let items: Vec<MenuItemEnum> = vec![
-        MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Cuenta atras"))), // TODO
-        MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Dominación"))),   // TODO
-        MenuItemEnum::BasicMenuItem(BasicMenuItem::new(String::from("Ajustes"))),      // TODO
+    let mut items = [
+        MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Cuenta atras")), // TODO
+        MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Dominación")),   // TODO
+        MenuItemEnum::BasicMenuItem(BasicMenuItem::new("Ajustes")),      // TODO
     ];
-    let menu = Menu::new(16, 2, items).unwrap();
+    let menu: Menu<16, 2> = Menu::new(&mut items).unwrap();
     let mut console_renderer = ConsoleRenderer::new(&menu);
 
     let mut tick_id: usize = 0;

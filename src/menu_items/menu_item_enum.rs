@@ -9,8 +9,8 @@ use enum_dispatch::enum_dispatch;
 #[enum_dispatch]
 pub enum MenuItemEnum<'a> {
     ActionMenuItem(ActionMenuItem<'a>),
-    BasicMenuItem(BasicMenuItem),
-    ListMenuItem(ListMenuItem),
-    RangeMenuItem(RangeMenuItem),
-    ToggleMenuItem(ToggleMenuItem),
+    BasicMenuItem(BasicMenuItem<'a>),
+    ListMenuItem(ListMenuItem<'a>),
+    RangeMenuItem(RangeMenuItem<'a>),
+    ToggleMenuItem(ToggleMenuItem<'a>),
 }

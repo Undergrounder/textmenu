@@ -1,18 +1,18 @@
 use crate::menu_items::menu_item::MenuItem;
 
-pub struct ToggleMenuItem {
-    label: String,
-    text_true: String,
-    text_false: String,
+pub struct ToggleMenuItem<'a> {
+    label: &'a str,
+    text_true: &'a str,
+    text_false: &'a str,
     value: bool,
 }
 
-impl ToggleMenuItem {
-    pub fn new(label: String) -> ToggleMenuItem {
+impl <'a> ToggleMenuItem<'a> {
+    pub fn new(label: &str) -> ToggleMenuItem {
         ToggleMenuItem {
             label,
-            text_true: String::from("ON"),
-            text_false: String::from("OFF"),
+            text_true: "ON",
+            text_false: "OFF",
             value: false,
         }
     }
@@ -22,14 +22,15 @@ impl ToggleMenuItem {
     }
 }
 
-impl MenuItem for ToggleMenuItem {
-    fn get_label(&self, _is_focused: bool) -> String {
+impl <'a> MenuItem for ToggleMenuItem<'a> {
+    fn get_label(&self, _is_focused: bool) -> &str {
         let value_text = if self.value {
-            &self.text_true
+            self.text_true
         } else {
-            &self.text_false
+            self.text_false
         };
-        format!("{}: {}", self.label, &value_text)
+        // TODO nostd format!("{}: {}", self.label, &value_text)
+        value_text
     }
 
     fn enter(&mut self, _is_focused: bool, _was_focused: bool) -> bool {
@@ -60,7 +61,7 @@ mod tests {
 
     #[test]
     fn item_is_usable() {
-        let mut item = ToggleMenuItem::new(String::from("label"));
+        let mut item = ToggleMenuItem::new("label");
         assert_eq!(item.left(), false);
         assert_eq!(item.right(), false);
         assert_eq!(item.back(), true);
