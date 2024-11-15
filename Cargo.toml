@@ -2,6 +2,12 @@
 name = "textmenu"
 version = "0.1.0"
 edition = "2021"
+keywords = ["lcd", "menu"]
+categories = ["embedded", "gui", "no-std", "no-std::no-alloc"]
+authors = [
+    "Adrian Tello Lasheras <adriantl7@gmail.com>",
+]
+license = "MIT"
 
 [dependencies]
 heapless = "0.8.0"
