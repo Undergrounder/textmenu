@@ -52,7 +52,7 @@ impl<
     }
 
     pub fn press(&mut self, key: KeyboardKey) -> bool {
-        self.submenu_menu_item.press(&key, false).handled
+        self.submenu_menu_item.press(&key, true).handled
     }
 
     pub fn enter(&mut self) -> bool {
@@ -435,6 +435,72 @@ mod tests {
         assert_eq!(lines_to_render[0], "→Item1: 10      ");
         assert_eq!(lines_to_render[1], " Item2          ");
     }
+
+    #[test]
+    fn submenu_is_usable() {
+        let mut submenu2_items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 1] =
+            [&mut BasicMenuItem::new("Sub2 Item1")];
+
+        let mut subitem2: SubmenuMenuItem<16, 2, { 16 * BYTES_PER_CHAR }> =
+            SubmenuMenuItem::new("Sub Item2", &mut submenu2_items);
+
+        let mut submenu1_items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] =
+            [&mut ToggleMenuItem::new("Sub Item1"), &mut subitem2];
+
+        let mut item1: SubmenuMenuItem<16, 2, { 16 * BYTES_PER_CHAR }> =
+            SubmenuMenuItem::new("Item1", &mut submenu1_items);
+        let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] =
+            [&mut item1, &mut BasicMenuItem::new("Item2")];
+        let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
+        assert_eq!(menu.char_width, 16);
+        assert_eq!(menu.char_height, 2);
+
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Sub Item1: OFF ");
+        assert_eq!(lines_to_render[1], " Sub Item2      ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], " Sub Item2      ");
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], "→Sub Item2      ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 1);
+        assert_eq!(lines_to_render[0], "→Sub2 Item1     ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], "→Sub Item2      ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = menu.generate_lines_to_render();
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+    }
 }
 
 // TODO improvements:
@@ -445,7 +511,3 @@ mod tests {
 // TODO horizontal scrolling if overflow
 // TODO disable functionality via features
 // TODO more range items (u8, signed, float, ....)
-
-// TODO
-// TODO don't loose focus if invalid input (char for example)
-// TODO test with multiple submenus

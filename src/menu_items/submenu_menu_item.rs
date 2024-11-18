@@ -93,6 +93,10 @@ impl<
         line_str
     }
 
+    fn get_selected_item(&self) -> &dyn MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+        self.items[self.selected_item_idx]
+    }
+
     fn get_mut_selected_item(
         &mut self,
     ) -> &mut dyn MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
@@ -138,47 +142,98 @@ impl<
         String::from_str(self.label).unwrap()
     }
 
-    fn press(&mut self, key: &KeyboardKey, _is_focused: bool) -> PressResult {
-        let item_press_result = {
-            let is_focused = self.is_focused;
-            let selected_item = self.get_mut_selected_item();
-            selected_item.press(key, is_focused)
-        };
-        let handled = if item_press_result.handled {
-            true
-        } else {
-            if let Some(function_key) = &key.function_key {
-                match function_key {
-                    FunctionKey::UP => self.up(),
-                    FunctionKey::DOWN => self.down(),
-                    _ => false,
+    fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult {
+        if is_focused {
+            let item_press_result = {
+                let is_focused = self.is_focused;
+                let selected_item = self.get_mut_selected_item();
+                selected_item.press(key, is_focused)
+            };
+            self.is_focused = item_press_result.focus;
+            if item_press_result.handled {
+                PressResult {
+                    handled: true,
+                    focus: true,
                 }
             } else {
-                false
+                if let Some(function_key) = &key.function_key {
+                    match function_key {
+                        FunctionKey::BACK => PressResult {
+                            focus: false,
+                            handled: true,
+                        },
+                        FunctionKey::UP => {
+                            let handled = self.up();
+                            PressResult {
+                                focus: true,
+                                handled,
+                            }
+                        }
+                        FunctionKey::DOWN => {
+                            let handled = self.down();
+                            PressResult {
+                                focus: true,
+                                handled,
+                            }
+                        }
+                        _ => PressResult {
+                            handled: false,
+                            focus: true,
+                        },
+                    }
+                } else {
+                    PressResult {
+                        handled: false,
+                        focus: true,
+                    }
+                }
             }
-        };
-        self.is_focused = item_press_result.focus;
-        PressResult {
-            handled,
-            focus: false,
+        } else {
+            match key.function_key {
+                Some(FunctionKey::ENTER) => PressResult {
+                    handled: true,
+                    focus: true,
+                },
+                _ => PressResult {
+                    handled: false,
+                    focus: false,
+                },
+            }
         }
     }
 
     fn generate_lines_to_render(
         &self,
     ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        let items_length = self.items.len();
-        let mut lines_to_render: Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST> = Vec::new();
-        let top_visible_item_idx = self.get_top_visible_item_idx();
-        let bottom_idx = core::cmp::min(CHAR_HEIGHT_CONST + top_visible_item_idx, items_length);
-        let visible_items = &self.items[top_visible_item_idx..bottom_idx];
-        for (item_idx, item) in visible_items.iter().enumerate() {
-            let corrected_item_idx = item_idx + top_visible_item_idx;
-            let line_to_render = self.generate_line_to_render(corrected_item_idx, *item);
-            lines_to_render.push(line_to_render).unwrap();
-        }
+        let lines_from_item_option = if self.is_focused {
+            let selected_item = self.get_selected_item();
+            let item_lines_to_render_option = selected_item.generate_lines_to_render();
+            if let Some(item_lines_to_render) = item_lines_to_render_option {
+                Some(item_lines_to_render)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
-        Some(lines_to_render)
+        if lines_from_item_option.is_some() {
+            lines_from_item_option
+        } else {
+            let items_length = self.items.len();
+            let mut lines_to_render: Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST> =
+                Vec::new();
+            let top_visible_item_idx = self.get_top_visible_item_idx();
+            let bottom_idx = core::cmp::min(CHAR_HEIGHT_CONST + top_visible_item_idx, items_length);
+            let visible_items = &self.items[top_visible_item_idx..bottom_idx];
+            for (item_idx, item) in visible_items.iter().enumerate() {
+                let corrected_item_idx = item_idx + top_visible_item_idx;
+                let line_to_render = self.generate_line_to_render(corrected_item_idx, *item);
+                lines_to_render.push(line_to_render).unwrap();
+            }
+
+            Some(lines_to_render)
+        }
     }
 }
 
