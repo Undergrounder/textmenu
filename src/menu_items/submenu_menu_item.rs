@@ -251,6 +251,5 @@ mod tests {
             SubmenuMenuItem::new("label", &mut items);
 
         assert_eq!(item.get_label(false), "label");
-        // TODO
     }
 }
