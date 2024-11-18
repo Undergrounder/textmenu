@@ -1,16 +1,22 @@
-use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use crate::keyboard::{FunctionKey, KeyboardKey};
+use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::fmt::Write;
-use heapless::String;
+use heapless::{String, Vec};
 
-pub struct ListMenuItem<'a> {
+pub struct ListMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
     label: &'a str,
     entries: &'a [&'a str],
     selected_entry_idx: usize,
     focus_selected_entry_idx: usize,
 }
 
-impl<'a> ListMenuItem<'a> {
-    pub fn new(label: &'a str, entries: &'a [&'a str]) -> Result<ListMenuItem<'a>, &'static str> {
+impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
+    ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+{
+    pub fn new(
+        label: &'a str,
+        entries: &'a [&'a str],
+    ) -> Result<ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str> {
         if entries.is_empty() {
             Err("At least one entry required")
         } else {
@@ -84,7 +90,10 @@ impl<'a> ListMenuItem<'a> {
     }
 }
 
-impl<'a> MenuItem for ListMenuItem<'a> {
+impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
+    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+    for ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+{
     fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
         let selected_entry = if is_focused {
             self.get_focused_selected_entry()
@@ -97,43 +106,65 @@ impl<'a> MenuItem for ListMenuItem<'a> {
         label_str
     }
 
-    fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool {
-        if is_focused && !was_focused {
-            self.focus_selected_entry_idx = self.selected_entry_idx;
-        } else if !is_focused && was_focused {
-            self.selected_entry_idx = self.focus_selected_entry_idx;
+    fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult {
+        let mut focus = is_focused;
+        let mut handled = false;
+        if let Some(function_key) = &key.function_key {
+            match function_key {
+                FunctionKey::ENTER => {
+                    if is_focused {
+                        self.selected_entry_idx = self.focus_selected_entry_idx;
+                    } else {
+                        self.focus_selected_entry_idx = self.selected_entry_idx;
+                    }
+                    focus = !is_focused;
+                    handled = true;
+                }
+                FunctionKey::BACK => {
+                    if is_focused {
+                        self.focus_selected_entry_idx = self.selected_entry_idx;
+                        handled = true;
+                        focus = false;
+                    }
+                }
+                FunctionKey::LEFT => {
+                    if is_focused {
+                        self.select_focused_prev_entry();
+                        handled = true;
+                        focus = true;
+                    }
+                }
+                FunctionKey::RIGHT => {
+                    if is_focused {
+                        self.select_focused_next_entry();
+                        handled = true;
+                        focus = true;
+                    }
+                }
+                _ => {}
+            };
         }
-        false
+
+        PressResult { handled, focus }
     }
 
-    fn is_focusable(&self) -> bool {
-        true
-    }
-
-    fn back(&mut self) -> bool {
-        self.focus_selected_entry_idx = self.selected_entry_idx;
-        true
-    }
-
-    fn left(&mut self) -> bool {
-        self.select_focused_prev_entry();
-        true
-    }
-
-    fn right(&mut self) -> bool {
-        self.select_focused_next_entry();
-        true
+    fn generate_lines_to_render(
+        &self,
+    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
+        None
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::consts::BYTES_PER_CHAR;
 
     #[test]
     fn select_next_entry_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item = ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -157,7 +188,8 @@ mod tests {
     #[test]
     fn select_prev_entry_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item = ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -181,7 +213,8 @@ mod tests {
     #[test]
     fn set_selected_entry_idx_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item = ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -209,37 +242,75 @@ mod tests {
     #[test]
     fn enter_confirms_selection() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item = ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        item.enter(true, false);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem2");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        assert_eq!(item.back(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::BACK), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
+        assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        item.enter(true, false);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem2");
         assert_eq!(item.get_selected_entry_idx(), 0);
 
-        item.enter(false, true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: Elem2");
         assert_eq!(item.get_label(true), "label: Elem2");
         assert_eq!(item.get_selected_entry_idx(), 1);

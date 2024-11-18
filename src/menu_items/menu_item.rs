@@ -1,4 +1,5 @@
-use heapless::String;
+use crate::keyboard::KeyboardKey;
+use heapless::{String, Vec};
 
 #[cfg(all(feature = "max_label_length_200"))]
 pub const MAX_LABEL_LENGTH: usize = 200;
@@ -17,11 +18,16 @@ pub const MAX_LABEL_LENGTH: usize = 50;
 pub const BYTES_PER_CHAR: usize = 4;
 pub const LABEL_BYTES: usize = MAX_LABEL_LENGTH * BYTES_PER_CHAR;
 
-pub trait MenuItem {
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub struct PressResult {
+    pub handled: bool,
+    pub focus: bool,
+}
+
+pub trait MenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
     fn get_label(&self, is_focused: bool) -> String<LABEL_BYTES>;
-    fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool;
-    fn is_focusable(&self) -> bool;
-    fn back(&mut self) -> bool;
-    fn left(&mut self) -> bool;
-    fn right(&mut self) -> bool;
+    fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult;
+    fn generate_lines_to_render(
+        &self,
+    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>>;
 }
