@@ -1,8 +1,9 @@
-use crate::menu_items::menu_item::{MenuItem, LABEL_BYTES};
+use crate::keyboard::{FunctionKey, KeyboardKey};
+use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::fmt::Write;
-use heapless::String;
+use heapless::{String, Vec};
 
-pub struct RangeMenuItem<'a> {
+pub struct RangeMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
     label: &'a str,
     value: u32,
     focused_value: u32,
@@ -11,13 +12,15 @@ pub struct RangeMenuItem<'a> {
     step_size: u32,
 }
 
-impl<'a> RangeMenuItem<'a> {
+impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
+    RangeMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+{
     pub fn new(
         label: &'a str,
         min_value: u32,
         max_value: u32,
         step_size: u32,
-    ) -> Result<RangeMenuItem, &'static str> {
+    ) -> Result<RangeMenuItem<CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str> {
         if min_value == max_value {
             Err("Min and max value can't be equal")
         } else if min_value > max_value {
@@ -79,9 +82,48 @@ impl<'a> RangeMenuItem<'a> {
         };
         self.focused_value = new_value;
     }
+
+    fn enter(&mut self, is_focused: bool) -> PressResult {
+        if is_focused {
+            self.value = self.focused_value;
+        } else {
+            self.focused_value = self.value;
+        }
+        PressResult {
+            focus: !is_focused,
+            handled: true,
+        }
+    }
+
+    fn back(&mut self) -> PressResult {
+        self.focused_value = self.value;
+        PressResult {
+            handled: true,
+            focus: false,
+        }
+    }
+
+    fn left(&mut self) -> PressResult {
+        self.select_focused_prev_value();
+        PressResult {
+            focus: true,
+            handled: true,
+        }
+    }
+
+    fn right(&mut self) -> PressResult {
+        self.select_focused_next_value();
+        PressResult {
+            focus: true,
+            handled: true,
+        }
+    }
 }
 
-impl<'a> MenuItem for RangeMenuItem<'a> {
+impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
+    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+    for RangeMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
+{
     fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
         let value = if is_focused {
             &self.focused_value
@@ -94,40 +136,40 @@ impl<'a> MenuItem for RangeMenuItem<'a> {
         label_str
     }
 
-    fn enter(&mut self, is_focused: bool, was_focused: bool) -> bool {
-        if is_focused && !was_focused {
-            self.focused_value = self.value;
-        } else if !is_focused && was_focused {
-            self.value = self.focused_value;
+    fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult {
+        if let Some(function_key) = &key.function_key {
+            match function_key {
+                FunctionKey::ENTER => self.enter(is_focused),
+                FunctionKey::BACK => self.back(),
+                FunctionKey::LEFT => self.left(),
+                FunctionKey::RIGHT => self.right(),
+                _ => PressResult {
+                    focus: false,
+                    handled: false,
+                },
+            }
+        } else {
+            PressResult {
+                focus: false,
+                handled: false,
+            }
         }
-        false
     }
 
-    fn is_focusable(&self) -> bool {
-        true
-    }
-
-    fn back(&mut self) -> bool {
-        self.focused_value = self.value;
-        true
-    }
-
-    fn left(&mut self) -> bool {
-        self.select_focused_prev_value();
-        true
-    }
-
-    fn right(&mut self) -> bool {
-        self.select_focused_next_value();
-        true
+    fn generate_lines_to_render(
+        &self,
+    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
+        None
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::consts::BYTES_PER_CHAR;
 
     fn assert_new_error(expected_error_msg: &str, min_value: u32, max_value: u32, step_size: u32) {
-        let range_menu_item_result = RangeMenuItem::new("label", min_value, max_value, step_size);
+        let range_menu_item_result: Result<RangeMenuItem<2, { 16 * BYTES_PER_CHAR }>, &str> =
+            RangeMenuItem::new("label", min_value, max_value, step_size);
         if let Err(error_msg) = range_menu_item_result {
             assert_eq!(error_msg, expected_error_msg);
         } else {
@@ -157,39 +199,75 @@ mod tests {
 
     #[test]
     fn item_works_as_expected() {
-        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 100, 20).unwrap();
-        assert_eq!(item.is_focusable(), true);
+        let mut item: RangeMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            RangeMenuItem::new("label", 0, 100, 20).unwrap();
 
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        item.enter(true, false);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.back(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::BACK), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        item.enter(true, false);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        item.enter(false, true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_label(false), "label: 20");
         assert_eq!(item.get_value(), 20);
@@ -197,24 +275,49 @@ mod tests {
 
     #[test]
     fn left_should_overflow_to_max() {
-        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 100, 20).unwrap();
-        item.enter(true, false);
+        let mut item: RangeMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            RangeMenuItem::new("label", 0, 100, 20).unwrap();
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
 
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.left(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 100");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.left(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 80");
         assert_eq!(item.get_value(), 0);
 
-        item.enter(false, true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 80");
         assert_eq!(item.get_label(true), "label: 80");
         assert_eq!(item.get_value(), 80);
@@ -222,34 +325,71 @@ mod tests {
 
     #[test]
     fn left_should_overflow_to_min() {
-        let mut item: RangeMenuItem = RangeMenuItem::new("label", 0, 40, 20).unwrap();
-        item.enter(true, false);
+        let mut item: RangeMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+            RangeMenuItem::new("label", 0, 40, 20).unwrap();
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
 
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 40");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
         assert_eq!(item.get_value(), 0);
 
-        assert_eq!(item.right(), true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::RIGHT), None), true),
+            PressResult {
+                focus: true,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_value(), 0);
 
-        item.enter(false, true);
+        assert_eq!(
+            item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), true),
+            PressResult {
+                focus: false,
+                handled: true
+            }
+        );
         assert_eq!(item.get_label(false), "label: 20");
         assert_eq!(item.get_label(true), "label: 20");
         assert_eq!(item.get_value(), 20);
