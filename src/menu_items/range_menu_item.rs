@@ -20,7 +20,7 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
         min_value: u32,
         max_value: u32,
         step_size: u32,
-    ) -> Result<RangeMenuItem<CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str> {
+    ) -> Result<RangeMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str> {
         if min_value == max_value {
             Err("Min and max value can't be equal")
         } else if min_value > max_value {
