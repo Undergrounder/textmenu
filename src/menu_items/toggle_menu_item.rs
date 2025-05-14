@@ -1,19 +1,17 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::fmt::Write;
-use heapless::{String, Vec};
+use heapless::String;
 
-pub struct ToggleMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
+pub struct ToggleMenuItem<'a> {
     label: &'a str,
     text_true: &'a str,
     text_false: &'a str,
     value: bool,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    ToggleMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(label: &str) -> ToggleMenuItem<CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+impl<'a> ToggleMenuItem<'a> {
+    pub fn new(label: &str) -> ToggleMenuItem {
         ToggleMenuItem {
             label,
             text_true: "ON",
@@ -32,10 +30,7 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for ToggleMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
+impl<'a> MenuItem<'a> for ToggleMenuItem<'a> {
     fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
         let value_text = if self.value {
             self.text_true
@@ -61,22 +56,15 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
             focus: false,
         }
     }
-
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::BYTES_PER_CHAR;
 
     #[test]
     fn item_is_usable() {
-        let mut item: ToggleMenuItem<2, { 16 * BYTES_PER_CHAR }> = ToggleMenuItem::new("label");
+        let mut item: ToggleMenuItem = ToggleMenuItem::new("label");
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), false),
             PressResult {

@@ -24,10 +24,7 @@ pub struct PressResult {
     pub focus: bool,
 }
 
-pub trait MenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
+pub trait MenuItem<'a> {
     fn get_label(&self, is_focused: bool) -> String<LABEL_BYTES>;
     fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult;
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>>;
 }

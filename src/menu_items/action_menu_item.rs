@@ -1,28 +1,20 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::str::FromStr;
-use heapless::{String, Vec};
+use heapless::String;
 
-pub struct ActionMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
+pub struct ActionMenuItem<'a> {
     label: &'a str,
     on_pressed: &'a mut dyn FnMut() -> bool,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(
-        label: &'a str,
-        on_pressed: &'a mut dyn FnMut() -> bool,
-    ) -> ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+impl<'a> ActionMenuItem<'a> {
+    pub fn new(label: &'a str, on_pressed: &'a mut dyn FnMut() -> bool) -> ActionMenuItem<'a> {
         ActionMenuItem { label, on_pressed }
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
+impl<'a> MenuItem<'a> for ActionMenuItem<'a> {
     fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
         String::from_str(self.label).unwrap()
     }
@@ -43,19 +35,12 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
             focus: false,
         }
     }
-
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::consts::BYTES_PER_CHAR;
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -67,7 +52,7 @@ mod tests {
             *clicked_count_clone.borrow_mut() += 1;
             true
         };
-        let mut item: ActionMenuItem<2, { 16 * BYTES_PER_CHAR }> =
+        let mut item: ActionMenuItem =
             ActionMenuItem::new("label", &mut on_click);
         assert_eq!(item.get_label(false), "label");
         assert_eq!(*clicked_count.borrow(), 0);

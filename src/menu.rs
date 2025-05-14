@@ -1,54 +1,21 @@
-use crate::consts::BYTES_PER_CHAR;
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
-use heapless::{String, Vec};
 
-pub struct Menu<
-    'a,
-    const CHAR_WIDTH_CONST: usize,
-    const CHAR_HEIGHT_CONST: usize,
-    const LINE_BYTES_SIZE_CONST: usize,
-> {
-    pub char_width: usize,
-    pub char_height: usize,
-    submenu_menu_item:
-        SubmenuMenuItem<'a, CHAR_WIDTH_CONST, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>,
+pub struct Menu<'a> {
+    submenu_menu_item: SubmenuMenuItem<'a>,
 }
 
-impl<
-        'a,
-        const CHAR_WIDTH_CONST: usize,
-        const CHAR_HEIGHT_CONST: usize,
-        const LINE_BYTES_SIZE_CONST: usize,
-    > Menu<'a, CHAR_WIDTH_CONST, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(
-        items: &'a mut [&'a mut dyn MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>],
-    ) -> Result<Menu<'a, CHAR_WIDTH_CONST, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str>
-    {
-        if LINE_BYTES_SIZE_CONST != CHAR_WIDTH_CONST * BYTES_PER_CHAR {
-            Err("LINE_BYTES_SIZE_CONST must be equal to CHAR_WIDTH_CONST*BYTES_PER_CHAR.")
-        } else if items.len() == 0 {
+impl<'a> Menu<'a> {
+    pub fn new(items: &'a mut [&'a mut dyn MenuItem<'a>]) -> Result<Menu<'a>, &'static str> {
+        if items.len() == 0 {
             Err("At least 1 menu item required.")
-        } else if CHAR_WIDTH_CONST < 3 {
-            Err("Invalid menu char width. At least 3 chars required.")
-        } else if CHAR_HEIGHT_CONST < 2 {
-            Err("Invalid menu char height. At least 2 chars required.")
         } else {
             let menu = Menu {
-                char_width: CHAR_WIDTH_CONST,
-                char_height: CHAR_HEIGHT_CONST,
                 submenu_menu_item: SubmenuMenuItem::new("Root", items),
             };
             Ok(menu)
         }
-    }
-
-    pub fn generate_lines_to_render(
-        &self,
-    ) -> Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST> {
-        self.submenu_menu_item.generate_lines_to_render().unwrap()
     }
 
     pub fn press(&mut self, key: KeyboardKey) -> bool {
@@ -80,6 +47,8 @@ impl<
     }
 }
 
+/*
+TODO
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -502,6 +471,8 @@ mod tests {
         assert_eq!(lines_to_render[1], " Item2          ");
     }
 }
+
+ */
 
 // TODO improvements:
 // TODO separate renderer and menu

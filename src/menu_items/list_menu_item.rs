@@ -1,22 +1,17 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::fmt::Write;
-use heapless::{String, Vec};
+use heapless::String;
 
-pub struct ListMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
+pub struct ListMenuItem<'a> {
     label: &'a str,
     entries: &'a [&'a str],
     selected_entry_idx: usize,
     focus_selected_entry_idx: usize,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(
-        label: &'a str,
-        entries: &'a [&'a str],
-    ) -> Result<ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>, &'static str> {
+impl<'a> ListMenuItem<'a> {
+    pub fn new(label: &'a str, entries: &'a [&'a str]) -> Result<ListMenuItem<'a>, &'static str> {
         if entries.is_empty() {
             Err("At least one entry required")
         } else {
@@ -90,10 +85,7 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for ListMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
+impl<'a> MenuItem<'a> for ListMenuItem<'a> {
     fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
         let selected_entry = if is_focused {
             self.get_focused_selected_entry()
@@ -147,24 +139,16 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
 
         PressResult { handled, focus }
     }
-
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::BYTES_PER_CHAR;
 
     #[test]
     fn select_next_entry_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
-            ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -188,8 +172,7 @@ mod tests {
     #[test]
     fn select_prev_entry_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
-            ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -213,8 +196,7 @@ mod tests {
     #[test]
     fn set_selected_entry_idx_works() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
-            ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -242,8 +224,7 @@ mod tests {
     #[test]
     fn enter_confirms_selection() {
         let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem<2, { 16 * BYTES_PER_CHAR }> =
-            ListMenuItem::new("label", &list_entries).unwrap();
+        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
