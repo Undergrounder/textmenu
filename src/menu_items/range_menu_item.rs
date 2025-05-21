@@ -2,6 +2,7 @@ use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::fmt::Write;
 use heapless::{String};
+use crate::menu_items::menu_item_kind::MenuItemKind;
 
 pub struct RangeMenuItem<'a> {
     label: &'a str,
@@ -149,6 +150,10 @@ impl<'a> MenuItem<'a> for RangeMenuItem<'a> {
                 handled: false,
             }
         }
+    }
+
+    fn kind(&'a self) -> MenuItemKind<'a> {
+        MenuItemKind::RangeMenuItem(&self)
     }
 }
 

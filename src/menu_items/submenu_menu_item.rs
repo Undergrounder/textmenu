@@ -1,19 +1,20 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::fmt::Write;
 use core::str::FromStr;
 use heapless::{String};
+use crate::menu_items::menu_item_kind::MenuItemKind;
 
 pub struct SubmenuMenuItem<'a> {
     label: &'a str,
-    pub items: &'a mut [&'a mut dyn MenuItem<'a>],
+    items: &'a mut [&'a mut dyn MenuItem<'a>],
     // View state
-    pub selected_item_idx: usize,
-    pub is_focused: bool,
+    selected_item_idx: usize,
+    is_focused: bool,
 }
 
 impl<'a> SubmenuMenuItem<'a> {
     pub fn new(label: &'a str, items: &'a mut [&'a mut dyn MenuItem<'a>]) -> SubmenuMenuItem<'a> {
+        // TODO panic if items length === 0
         SubmenuMenuItem {
             label,
             items,
@@ -22,7 +23,7 @@ impl<'a> SubmenuMenuItem<'a> {
         }
     }
 
-    pub fn get_selected_item(&self) -> &dyn MenuItem<'a> {
+    pub fn get_selected_item(&'a self) -> &'a dyn MenuItem<'a> {
         self.items[self.selected_item_idx]
     }
 
@@ -54,6 +55,24 @@ impl<'a> SubmenuMenuItem<'a> {
         } else {
             false
         }
+    }
+
+    #[inline]
+    pub fn is_focused(&self) -> bool {
+        self.is_focused
+    }
+
+    #[inline]
+    pub fn get_selected_item_idx(&self) -> usize {
+        self.selected_item_idx
+    }
+
+    pub fn get_item(&'a self, idx: usize) -> Option<&'a dyn MenuItem<'a>> {
+        self.items.get(idx).map(|v| &**v)
+    }
+
+    pub fn item_count(&self) -> usize {
+        self.items.len()
     }
 }
 
@@ -120,6 +139,10 @@ impl<'a> MenuItem<'a> for SubmenuMenuItem<'a> {
                 },
             }
         }
+    }
+
+    fn kind(&'a self) -> MenuItemKind<'a> {
+        MenuItemKind::SubmenuMenuItem(&self)
     }
 }
 

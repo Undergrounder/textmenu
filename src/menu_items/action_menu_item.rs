@@ -2,6 +2,7 @@ use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::str::FromStr;
 use heapless::String;
+use crate::menu_items::menu_item_kind::MenuItemKind;
 
 pub struct ActionMenuItem<'a> {
     label: &'a str,
@@ -34,6 +35,10 @@ impl<'a> MenuItem<'a> for ActionMenuItem<'a> {
             handled,
             focus: false,
         }
+    }
+
+    fn kind(&'a self) -> MenuItemKind<'a> {
+        MenuItemKind::ActionMenuItem(&self)
     }
 }
 

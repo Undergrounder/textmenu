@@ -1,5 +1,6 @@
 use crate::keyboard::KeyboardKey;
-use heapless::{String, Vec};
+use heapless::{String};
+use crate::menu_items::menu_item_kind::MenuItemKind;
 
 #[cfg(all(feature = "max_label_length_200"))]
 pub const MAX_LABEL_LENGTH: usize = 200;
@@ -27,4 +28,5 @@ pub struct PressResult {
 pub trait MenuItem<'a> {
     fn get_label(&self, is_focused: bool) -> String<LABEL_BYTES>;
     fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult;
+    fn kind(&'a self) -> MenuItemKind<'a>;
 }

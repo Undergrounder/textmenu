@@ -11,3 +11,11 @@
 cargo build --release
 cargo test --release
 ```
+
+## Pendings tasks
+
+* Features to disable item types
+* Features to disable renderer types
+* Features to disable interface impls
+** Debug
+** Eq, PartialEq

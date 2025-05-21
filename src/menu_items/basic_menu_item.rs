@@ -2,6 +2,7 @@ use crate::keyboard::KeyboardKey;
 use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
 use core::str::FromStr;
 use heapless::String;
+use crate::menu_items::menu_item_kind::MenuItemKind;
 
 pub struct BasicMenuItem<'a> {
     label: &'a str,
@@ -23,6 +24,10 @@ impl<'a> MenuItem<'a> for BasicMenuItem<'a> {
             handled: false,
             focus: false,
         }
+    }
+
+    fn kind(&'a self) -> MenuItemKind<'a> {
+        MenuItemKind::BasicMenuItem(&self)
     }
 }
 
