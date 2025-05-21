@@ -1,18 +1,17 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::fmt::Write;
-use heapless::String;
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use crate::menu_items::menu_item_kind::MenuItemKind;
+use core::fmt::Write;
 
-pub struct ListMenuItem<'a> {
-    label: &'a str,
-    entries: &'a [&'a str],
+pub struct ListMenuItem {
+    label: String,
+    entries: Vec<String>,
     selected_entry_idx: usize,
     focus_selected_entry_idx: usize,
 }
 
-impl<'a> ListMenuItem<'a> {
-    pub fn new(label: &'a str, entries: &'a [&'a str]) -> Result<ListMenuItem<'a>, &'static str> {
+impl ListMenuItem {
+    pub fn new(label: String, entries: Vec<String>) -> Result<ListMenuItem, &'static str> {
         if entries.is_empty() {
             Err("At least one entry required")
         } else {
@@ -86,15 +85,15 @@ impl<'a> ListMenuItem<'a> {
     }
 }
 
-impl<'a> MenuItem<'a> for ListMenuItem<'a> {
-    fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
+impl MenuItem for ListMenuItem {
+    fn get_label(&self, is_focused: bool) -> String {
         let selected_entry = if is_focused {
             self.get_focused_selected_entry()
         } else {
             self.get_selected_entry()
         };
 
-        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        let mut label_str: String = String::new();
         write!(label_str, "{}: {}", &self.label, selected_entry).unwrap();
         label_str
     }
@@ -141,7 +140,7 @@ impl<'a> MenuItem<'a> for ListMenuItem<'a> {
         PressResult { handled, focus }
     }
 
-    fn kind(&'a self) -> MenuItemKind<'a> {
+    fn kind(&self) -> MenuItemKind {
         MenuItemKind::ListMenuItem(&self)
     }
 }
@@ -152,8 +151,13 @@ mod tests {
 
     #[test]
     fn select_next_entry_works() {
-        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
+        let list_entries = vec![
+            String::from("Elem1"),
+            String::from("Elem2"),
+            String::from("Elem3"),
+        ];
+        let mut item: ListMenuItem =
+            ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -176,8 +180,13 @@ mod tests {
 
     #[test]
     fn select_prev_entry_works() {
-        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
+        let list_entries = vec![
+            String::from("Elem1"),
+            String::from("Elem2"),
+            String::from("Elem3"),
+        ];
+        let mut item: ListMenuItem =
+            ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -200,8 +209,13 @@ mod tests {
 
     #[test]
     fn set_selected_entry_idx_works() {
-        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
+        let list_entries = vec![
+            String::from("Elem1"),
+            String::from("Elem2"),
+            String::from("Elem3"),
+        ];
+        let mut item: ListMenuItem =
+            ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);
@@ -228,8 +242,13 @@ mod tests {
 
     #[test]
     fn enter_confirms_selection() {
-        let list_entries: [&str; 3] = ["Elem1", "Elem2", "Elem3"];
-        let mut item: ListMenuItem = ListMenuItem::new("label", &list_entries).unwrap();
+        let list_entries = vec![
+            String::from("Elem1"),
+            String::from("Elem2"),
+            String::from("Elem3"),
+        ];
+        let mut item: ListMenuItem =
+            ListMenuItem::new(String::from("label"), list_entries).unwrap();
         assert_eq!(item.get_label(false), "label: Elem1");
         assert_eq!(item.get_label(true), "label: Elem1");
         assert_eq!(item.get_selected_entry_idx(), 0);

@@ -10,7 +10,6 @@ authors = [
 license = "MIT"
 
 [dependencies]
-heapless = "0.8.0"
 
 [features]
 default = ["max_label_length_50"]

@@ -1,11 +1,10 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::fmt::Write;
-use heapless::{String};
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use crate::menu_items::menu_item_kind::MenuItemKind;
+use core::fmt::Write;
 
-pub struct RangeMenuItem<'a> {
-    label: &'a str,
+pub struct RangeMenuItem {
+    label: String,
     value: u32,
     focused_value: u32,
     max_value: u32,
@@ -13,13 +12,13 @@ pub struct RangeMenuItem<'a> {
     step_size: u32,
 }
 
-impl<'a> RangeMenuItem<'a> {
+impl RangeMenuItem {
     pub fn new(
-        label: &'a str,
+        label: String,
         min_value: u32,
         max_value: u32,
         step_size: u32,
-    ) -> Result<RangeMenuItem<'a>, &'static str> {
+    ) -> Result<RangeMenuItem, &'static str> {
         if min_value == max_value {
             Err("Min and max value can't be equal")
         } else if min_value > max_value {
@@ -119,15 +118,15 @@ impl<'a> RangeMenuItem<'a> {
     }
 }
 
-impl<'a> MenuItem<'a> for RangeMenuItem<'a> {
-    fn get_label(&self, is_focused: bool) -> String<{ LABEL_BYTES }> {
+impl MenuItem for RangeMenuItem {
+    fn get_label(&self, is_focused: bool) -> String {
         let value = if is_focused {
             &self.focused_value
         } else {
             &self.value
         };
 
-        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        let mut label_str: String = String::new();
         write!(label_str, "{}: {}", self.label, value).unwrap();
         label_str
     }
@@ -152,7 +151,7 @@ impl<'a> MenuItem<'a> for RangeMenuItem<'a> {
         }
     }
 
-    fn kind(&'a self) -> MenuItemKind<'a> {
+    fn kind(&self) -> MenuItemKind {
         MenuItemKind::RangeMenuItem(&self)
     }
 }
@@ -163,7 +162,7 @@ mod tests {
 
     fn assert_new_error(expected_error_msg: &str, min_value: u32, max_value: u32, step_size: u32) {
         let range_menu_item_result: Result<RangeMenuItem, &str> =
-            RangeMenuItem::new("label", min_value, max_value, step_size);
+            RangeMenuItem::new(String::from("label"), min_value, max_value, step_size);
         if let Err(error_msg) = range_menu_item_result {
             assert_eq!(error_msg, expected_error_msg);
         } else {
@@ -194,7 +193,7 @@ mod tests {
     #[test]
     fn item_works_as_expected() {
         let mut item: RangeMenuItem =
-            RangeMenuItem::new("label", 0, 100, 20).unwrap();
+            RangeMenuItem::new(String::from("label"), 0, 100, 20).unwrap();
 
         assert_eq!(item.get_label(false), "label: 0");
         assert_eq!(item.get_label(true), "label: 0");
@@ -270,7 +269,7 @@ mod tests {
     #[test]
     fn left_should_overflow_to_max() {
         let mut item: RangeMenuItem =
-            RangeMenuItem::new("label", 0, 100, 20).unwrap();
+            RangeMenuItem::new(String::from("label"), 0, 100, 20).unwrap();
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
             PressResult {
@@ -319,8 +318,7 @@ mod tests {
 
     #[test]
     fn left_should_overflow_to_min() {
-        let mut item: RangeMenuItem =
-            RangeMenuItem::new("label", 0, 40, 20).unwrap();
+        let mut item: RangeMenuItem = RangeMenuItem::new(String::from("label"), 0, 40, 20).unwrap();
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::ENTER), None), false),
             PressResult {

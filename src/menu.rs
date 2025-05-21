@@ -2,23 +2,23 @@ use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 
-pub struct Menu<'a> {
-    submenu_menu_item: SubmenuMenuItem<'a>,
+pub struct Menu {
+    submenu_menu_item: SubmenuMenuItem,
 }
 
-impl<'a> Menu<'a> {
-    pub fn new(items: &'a mut [&'a mut dyn MenuItem<'a>]) -> Result<Menu<'a>, &'static str> {
+impl Menu {
+    pub fn new(items: Vec<Box<dyn MenuItem>>) -> Result<Menu, &'static str> {
         if items.len() == 0 {
             Err("At least 1 menu item required.")
         } else {
             let menu = Menu {
-                submenu_menu_item: SubmenuMenuItem::new("Root", items),
+                submenu_menu_item: SubmenuMenuItem::new(String::from("Root"), items),
             };
             Ok(menu)
         }
     }
 
-    pub fn get_submenu_menu_item(&'a self) -> &'a SubmenuMenuItem<'a> {
+    pub fn get_submenu_menu_item(&self) -> &SubmenuMenuItem {
         &self.submenu_menu_item
     }
 
@@ -448,7 +448,6 @@ fn submenu_is_usable() {
 }
 }
  */
-
 
 // TODO improvements:
 // TODO input item

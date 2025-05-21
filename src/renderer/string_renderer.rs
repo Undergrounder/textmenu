@@ -1,40 +1,47 @@
-use heapless::{String, Vec};
 use crate::menu::Menu;
-use crate::menu_items::menu_item::{MenuItem, BYTES_PER_CHAR};
+use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::menu_item_kind::MenuItemKind;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 use core::fmt::Write;
 
-pub struct StringRenderer<const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES_PER_LINE: usize> {}
+pub struct StringRenderer {
+    char_count: usize,
+    line_count: usize,
+}
 
-impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES_PER_LINE: usize> StringRenderer<LINE_MAX_CHAR_COUNT, LINE_COUNT, MAX_BYTES_PER_LINE> {
-    pub fn new() -> Self {
-        assert!(LINE_MAX_CHAR_COUNT >= 3, "Invalid line max char count. At least 3 required.");
-        assert!(LINE_COUNT >= 2, "Invalid menu line count. At least 2 lines required.");
-        assert_eq!(MAX_BYTES_PER_LINE, LINE_MAX_CHAR_COUNT * BYTES_PER_CHAR, "Invalid MAX_BYTES_PER_LINE. It must be equal to LINE_MAX_CHAR_COUNT * BYTES_PER_CHAR.");
-
-        Self {}
+impl StringRenderer {
+    pub fn new(char_count: usize, line_count: usize) -> Result<Self, &'static str> {
+        if char_count < 3 {
+            Err("Invalid char count. At least 3 chars required.")
+        } else if line_count < 2 {
+            Err("Invalid line count. At least 2 lines required.")
+        } else {
+            Ok(Self {
+                line_count,
+                char_count,
+            })
+        }
     }
 
-    pub fn render<'a>(&self, menu: &'a Menu<'a>) -> Vec<String<MAX_BYTES_PER_LINE>, LINE_COUNT> {
+    pub fn render(&self, menu: &Menu) -> Vec<String> {
         let submenu_item = menu.get_submenu_menu_item();
-        let mut lines = self.generate_lines_to_render(submenu_item).unwrap_or_else(move || Vec::new());
+        let mut lines = self
+            .generate_lines_to_render(submenu_item)
+            .unwrap_or_else(move || Vec::new());
 
-        while lines.len() != LINE_COUNT {
-            let mut line: String<MAX_BYTES_PER_LINE> = String::new();
-            for _char_idx in 0..LINE_MAX_CHAR_COUNT {
-                line.push(' ').unwrap();
+        while lines.len() != self.line_count {
+            let mut line: String = String::new();
+            for _char_idx in 0..self.char_count {
+                line.push(' ');
             }
 
-            lines.push(line).unwrap();
+            lines.push(line);
         }
 
         lines
     }
 
-    fn generate_lines_to_render<'a>(
-        &self, item: &'a dyn MenuItem<'a>
-    ) -> Option<Vec<String<MAX_BYTES_PER_LINE>, LINE_COUNT>> {
+    fn generate_lines_to_render<'a>(&self, item: &dyn MenuItem) -> Option<Vec<String>> {
         let selected_item_kind = item.kind();
         if let MenuItemKind::SubmenuMenuItem(&ref sub_submenu) = &selected_item_kind {
             let lines_from_item_option = if sub_submenu.is_focused() {
@@ -52,16 +59,20 @@ impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES
             if lines_from_item_option.is_some() {
                 lines_from_item_option
             } else {
-                let mut lines_to_render: Vec<String<MAX_BYTES_PER_LINE>, LINE_COUNT> =
-                    Vec::new();
+                let mut lines_to_render: Vec<String> = Vec::new();
                 let selected_item_idx = sub_submenu.get_selected_item_idx();
                 let top_visible_item_idx = self.get_top_visible_item_idx(selected_item_idx);
                 let items_length = sub_submenu.item_count();
-                let bottom_idx = core::cmp::min(LINE_COUNT + top_visible_item_idx, items_length);
+                let bottom_idx =
+                    core::cmp::min(self.line_count + top_visible_item_idx, items_length);
                 for visible_item_idx in top_visible_item_idx..bottom_idx {
                     let visible_item = sub_submenu.get_item(visible_item_idx).unwrap();
-                    let line_to_render = self.generate_submenu_line_to_render(&sub_submenu, visible_item_idx, visible_item);
-                    lines_to_render.push(line_to_render).unwrap();
+                    let line_to_render = self.generate_submenu_line_to_render(
+                        &sub_submenu,
+                        visible_item_idx,
+                        visible_item,
+                    );
+                    lines_to_render.push(line_to_render);
                 }
 
                 Some(lines_to_render)
@@ -75,8 +86,8 @@ impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES
         &self,
         submenu: &SubmenuMenuItem,
         item_idx: usize,
-        item: &dyn MenuItem
-    ) -> String<MAX_BYTES_PER_LINE> {
+        item: &dyn MenuItem,
+    ) -> String {
         let selected_item_idx = submenu.get_selected_item_idx();
         let is_selected_item = item_idx == selected_item_idx;
         let is_item_focused = is_selected_item && submenu.is_focused();
@@ -90,7 +101,7 @@ impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES
             " "
         };
         let label = item.get_label(is_item_focused);
-        let max_length_label = LINE_MAX_CHAR_COUNT - 2;
+        let max_length_label = self.char_count - 2;
         let label_trimmed = if label.len() > max_length_label {
             &label[..max_length_label]
         } else {
@@ -98,7 +109,7 @@ impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES
         };
 
         let top_visible_item_idx = self.get_top_visible_item_idx(selected_item_idx);
-        let bottom_item_idx = top_visible_item_idx + LINE_COUNT - 1;
+        let bottom_item_idx = top_visible_item_idx + self.line_count - 1;
         let arrow_str: &str = if item_idx == top_visible_item_idx {
             if top_visible_item_idx != 0 {
                 "↑"
@@ -115,22 +126,21 @@ impl <const LINE_MAX_CHAR_COUNT: usize, const LINE_COUNT: usize, const MAX_BYTES
             " "
         };
 
-        let mut line_str: String<MAX_BYTES_PER_LINE> = String::new();
+        let mut line_str: String = String::new();
         write!(
             line_str,
             "{}{:3$}{}",
             selection_str, label_trimmed, arrow_str, max_length_label
         )
-            .unwrap();
+        .unwrap();
         line_str
     }
 
     fn get_top_visible_item_idx(&self, selected_item_idx: usize) -> usize {
-        let div = selected_item_idx.div_euclid(LINE_COUNT);
-        div * LINE_COUNT
+        let div = selected_item_idx.div_euclid(self.line_count);
+        div * self.line_count
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -145,11 +155,11 @@ mod tests {
 
     #[test]
     fn can_create_simple_menu() {
-        let mut items: [&mut dyn MenuItem; 1] =
-            [&mut BasicMenuItem::new("Item1")];
-        let menu: Menu = Menu::new(&mut items).unwrap();
+        let items: Vec<Box<dyn MenuItem>> =
+            vec![Box::new(BasicMenuItem::new(String::from("Item1")))];
+        let menu: Menu = Menu::new(items).unwrap();
 
-        let renderer: StringRenderer<16, 2, { 16 * BYTES_PER_CHAR }> = StringRenderer::new();
+        let renderer: StringRenderer = StringRenderer::new(16, 2).unwrap();
 
         let lines_to_render = renderer.render(&menu);
         assert_eq!(lines_to_render.len(), 2);
@@ -157,23 +167,21 @@ mod tests {
         assert_eq!(lines_to_render[1], "                ");
     }
 
-
     #[test]
     fn can_create_big_menu() {
-        let mut items: [&mut dyn MenuItem; 8] = [
-            &mut BasicMenuItem::new("Item1"),
-            &mut BasicMenuItem::new("Item2"),
-            &mut BasicMenuItem::new("Item3"),
-            &mut BasicMenuItem::new("Item4"),
-            &mut BasicMenuItem::new("Item5"),
-            &mut BasicMenuItem::new("Item6"),
-            &mut BasicMenuItem::new("Item7"),
-            &mut BasicMenuItem::new("Item8"),
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(BasicMenuItem::new(String::from("Item1"))),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+            Box::new(BasicMenuItem::new(String::from("Item3"))),
+            Box::new(BasicMenuItem::new(String::from("Item4"))),
+            Box::new(BasicMenuItem::new(String::from("Item5"))),
+            Box::new(BasicMenuItem::new(String::from("Item6"))),
+            Box::new(BasicMenuItem::new(String::from("Item7"))),
+            Box::new(BasicMenuItem::new(String::from("Item8"))),
         ];
-        let mut menu: Menu = Menu::new(&mut items).unwrap();
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-        let renderer: StringRenderer<16, 5, { 16 * BYTES_PER_CHAR }> = StringRenderer::new();
-
+        let renderer: StringRenderer = StringRenderer::new(16, 5).unwrap();
 
         let lines_to_render = renderer.render(&menu);
         assert_eq!(lines_to_render.len(), 5);
@@ -229,338 +237,342 @@ mod tests {
         assert_eq!(lines_to_render[4], "                ");
     }
 
-    /*
- TODO
+    #[test]
+    fn can_create_complex_menu() {
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(BasicMenuItem::new(String::from("Item1"))),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+            Box::new(BasicMenuItem::new(String::from("Item3"))),
+            Box::new(BasicMenuItem::new(String::from("Item4"))),
+            Box::new(BasicMenuItem::new(String::from("Item5"))),
+        ];
+        let mut menu: Menu = Menu::new(items).unwrap();
 
- #[test]
- fn can_create_complex_menu() {
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 5] = [
-         &mut BasicMenuItem::new("Item1"),
-         &mut BasicMenuItem::new("Item2"),
-         &mut BasicMenuItem::new("Item3"),
-         &mut BasicMenuItem::new("Item4"),
-         &mut BasicMenuItem::new("Item5"),
-     ];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2         ↓");
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2         ↓");
 
-     assert_eq!(menu.up(), false);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2         ↓");
+        assert_eq!(menu.up(), false);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2         ↓");
 
-     assert_eq!(menu.down(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], " Item1          ");
-     assert_eq!(lines_to_render[1], "→Item2         ↓");
+        assert_eq!(menu.down(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Item1          ");
+        assert_eq!(lines_to_render[1], "→Item2         ↓");
 
-     assert_eq!(menu.down(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item3         ↑");
-     assert_eq!(lines_to_render[1], " Item4         ↓");
+        assert_eq!(menu.down(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item3         ↑");
+        assert_eq!(lines_to_render[1], " Item4         ↓");
 
-     assert_eq!(menu.down(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], " Item3         ↑");
-     assert_eq!(lines_to_render[1], "→Item4         ↓");
+        assert_eq!(menu.down(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Item3         ↑");
+        assert_eq!(lines_to_render[1], "→Item4         ↓");
 
-     assert_eq!(menu.down(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 1);
-     assert_eq!(lines_to_render[0], "→Item5         ↑");
+        assert_eq!(menu.down(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item5         ↑");
+        assert_eq!(lines_to_render[1], "                ");
 
-     assert_eq!(menu.up(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], " Item3         ↑");
-     assert_eq!(lines_to_render[1], "→Item4         ↓");
- }
+        assert_eq!(menu.up(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Item3         ↑");
+        assert_eq!(lines_to_render[1], "→Item4         ↓");
+    }
 
- #[test]
- fn panics_if_invalid_char_width() {
-     let mut items: [&mut dyn MenuItem<2, { 1 * BYTES_PER_CHAR }>; 1] =
-         [&mut BasicMenuItem::new("Item1")];
-     let menu_result: Result<Menu<1, 2, { 1 * BYTES_PER_CHAR }>, &str> = Menu::new(&mut items);
-     if let Err(error) = menu_result {
-         assert_eq!(error, "Invalid menu char width. At least 3 chars required.")
-     } else {
-         panic!("It should return an error");
-     }
- }
+    #[test]
+    fn panics_if_invalid_char_count() {
+        let renderer_result = StringRenderer::new(2, 2);
 
- #[test]
- fn panics_if_invalid_char_height() {
-     let mut items: [&mut dyn MenuItem<1, { 16 * BYTES_PER_CHAR }>; 1] =
-         [&mut BasicMenuItem::new("Item1")];
-     let menu_result: Result<Menu<16, 1, { 16 * BYTES_PER_CHAR }>, &str> = Menu::new(&mut items);
-     if let Err(error) = menu_result {
-         assert_eq!(
-             error,
-             "Invalid menu char height. At least 2 chars required."
-         )
-     } else {
-         panic!("It should return an error");
-     }
- }
+        if let Err(error) = renderer_result {
+            assert_eq!(error, "Invalid char count. At least 3 chars required.")
+        } else {
+            panic!("It should return an error");
+        }
+    }
 
- #[test]
- fn basic_item_is_usable() {
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 1] =
-         [&mut BasicMenuItem::new("Item1")];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+    #[test]
+    fn panics_if_invalid_line_count() {
+        let renderer_result = StringRenderer::new(16, 1);
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 1);
-     assert_eq!(lines_to_render[0], "→Item1          ");
+        if let Err(error) = renderer_result {
+            assert_eq!(error, "Invalid line count. At least 2 lines required.")
+        } else {
+            panic!("It should return an error");
+        }
+    }
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 1);
-     assert_eq!(lines_to_render[0], "→Item1          ");
- }
+    #[test]
+    fn basic_item_ignores_enter() {
+        let items: Vec<Box<dyn MenuItem>> =
+            vec![Box::new(BasicMenuItem::new(String::from("Item1")))];
+        let mut menu: Menu = Menu::new(items).unwrap();
 
- #[test]
- fn action_item_is_usable() {
-     let clicked_count = Rc::new(RefCell::new(0));
-     let clicked_count_clone = Rc::clone(&clicked_count);
-     let mut on_click = move || {
-         *clicked_count_clone.borrow_mut() += 1;
-         true
-     };
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] = [
-         &mut ActionMenuItem::new("Item1", &mut on_click),
-         &mut BasicMenuItem::new("Item2"),
-     ];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2          ");
-     assert_eq!(*clicked_count.borrow(), 0);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], "                ");
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2          ");
-     assert_eq!(*clicked_count.borrow(), 1);
- }
+        assert_eq!(false, menu.enter());
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], "                ");
+    }
 
- #[test]
- fn list_item_is_usable() {
-     let list_entries = ["Elem1", "Elem2", "Elem3"];
+    #[test]
+    fn action_item_is_usable() {
+        let clicked_count = Rc::new(RefCell::new(0));
+        let clicked_count_clone = Rc::clone(&clicked_count);
+        let on_click = move || {
+            *clicked_count_clone.borrow_mut() += 1;
+            true
+        };
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(ActionMenuItem::new(
+                String::from("Item1"),
+                Box::new(on_click),
+            )),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+        ];
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] = [
-         &mut ListMenuItem::new("Item1", &list_entries).unwrap(),
-         &mut BasicMenuItem::new("Item2"),
-     ];
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(*clicked_count.borrow(), 0);
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: Elem1   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
-     assert_eq!(menu.left(), false);
-     assert_eq!(menu.right(), false);
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(*clicked_count.borrow(), 1);
+    }
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: Elem1   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+    #[test]
+    fn list_item_is_usable() {
+        let list_entries = vec![
+            String::from("Elem1"),
+            String::from("Elem2"),
+            String::from("Elem3"),
+        ];
 
-     // Can't move while focused
-     assert_eq!(menu.up(), false);
-     assert_eq!(menu.down(), false);
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(ListMenuItem::new(String::from("Item1"), list_entries).unwrap()),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+        ];
 
-     assert_eq!(menu.right(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: Elem2   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-     assert_eq!(menu.back(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: Elem1   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: Elem1   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: Elem1   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.left(), false);
+        assert_eq!(menu.right(), false);
 
-     assert_eq!(menu.left(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: Elem3   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: Elem1   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: Elem3   ");
-     assert_eq!(lines_to_render[1], " Item2          ");
- }
+        // Can't move while focused
+        assert_eq!(menu.up(), false);
+        assert_eq!(menu.down(), false);
 
- #[test]
- fn toggle_item_is_usable() {
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] = [
-         &mut ToggleMenuItem::new("Item1"),
-         &mut BasicMenuItem::new("Item2"),
-     ];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.right(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: Elem2   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: OFF     ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.back(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: Elem1   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: ON      ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: Elem1   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: OFF     ");
-     assert_eq!(lines_to_render[1], " Item2          ");
- }
+        assert_eq!(menu.left(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: Elem3   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
- #[test]
- fn range_item_is_usable() {
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] = [
-         &mut RangeMenuItem::new("Item1", 3, 10, 1).unwrap(),
-         &mut BasicMenuItem::new("Item2"),
-     ];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: Elem3   ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+    }
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: 3       ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+    #[test]
+    fn toggle_item_is_usable() {
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(ToggleMenuItem::new(String::from("Item1"))),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+        ];
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: 3       ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-     menu.left();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: 10      ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     menu.left();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: 9       ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: OFF     ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     menu.right();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "←Item1: 10      ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: ON      ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     menu.enter();
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1: 10      ");
-     assert_eq!(lines_to_render[1], " Item2          ");
- }
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: OFF     ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+    }
 
- #[test]
- fn submenu_is_usable() {
-     let mut submenu2_items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 1] =
-         [&mut BasicMenuItem::new("Sub2 Item1")];
+    #[test]
+    fn range_item_is_usable() {
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(RangeMenuItem::new(String::from("Item1"), 3, 10, 1).unwrap()),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+        ];
 
-     let mut subitem2: SubmenuMenuItem<16, 2, { 16 * BYTES_PER_CHAR }> =
-         SubmenuMenuItem::new("Sub Item2", &mut submenu2_items);
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-     let mut submenu1_items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] =
-         [&mut ToggleMenuItem::new("Sub Item1"), &mut subitem2];
+        let renderer = StringRenderer::new(16, 2).unwrap();
 
-     let mut item1: SubmenuMenuItem<16, 2, { 16 * BYTES_PER_CHAR }> =
-         SubmenuMenuItem::new("Item1", &mut submenu1_items);
-     let mut items: [&mut dyn MenuItem<2, { 16 * BYTES_PER_CHAR }>; 2] =
-         [&mut item1, &mut BasicMenuItem::new("Item2")];
-     let mut menu: Menu<16, 2, { 16 * BYTES_PER_CHAR }> = Menu::new(&mut items).unwrap();
-     assert_eq!(menu.char_width, 16);
-     assert_eq!(menu.char_height, 2);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: 3       ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: 3       ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     assert_eq!(menu.enter(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Sub Item1: OFF ");
-     assert_eq!(lines_to_render[1], " Sub Item2      ");
+        assert_eq!(menu.left(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: 10      ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     assert_eq!(menu.enter(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Sub Item1: ON  ");
-     assert_eq!(lines_to_render[1], " Sub Item2      ");
+        assert_eq!(menu.left(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: 9       ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     assert_eq!(menu.down(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
-     assert_eq!(lines_to_render[1], "→Sub Item2      ");
+        assert_eq!(menu.right(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "←Item1: 10      ");
+        assert_eq!(lines_to_render[1], " Item2          ");
 
-     assert_eq!(menu.enter(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 1);
-     assert_eq!(lines_to_render[0], "→Sub2 Item1     ");
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1: 10      ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+    }
 
-     assert_eq!(menu.back(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
-     assert_eq!(lines_to_render[1], "→Sub Item2      ");
+    #[test]
+    fn submenu_is_usable() {
+        let submenu2_items: Vec<Box<dyn MenuItem>> =
+            vec![Box::new(BasicMenuItem::new(String::from("Sub2 Item1")))];
+        let subitem2 = SubmenuMenuItem::new(String::from("Sub Item2"), submenu2_items);
+        let submenu1_items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(ToggleMenuItem::new(String::from("Sub Item1"))),
+            Box::new(subitem2),
+        ];
+        let item1 = SubmenuMenuItem::new(String::from("Item1"), submenu1_items);
 
-     assert_eq!(menu.back(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2          ");
+        let items: Vec<Box<dyn MenuItem>> = vec![
+            Box::new(item1),
+            Box::new(BasicMenuItem::new(String::from("Item2"))),
+        ];
 
-     assert_eq!(menu.back(), true);
-     let lines_to_render = menu.generate_lines_to_render();
-     assert_eq!(lines_to_render.len(), 2);
-     assert_eq!(lines_to_render[0], "→Item1          ");
-     assert_eq!(lines_to_render[1], " Item2          ");
- }
+        let mut menu: Menu = Menu::new(items).unwrap();
 
-  */
+        let renderer = StringRenderer::new(16, 2).unwrap();
+
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Sub Item1: OFF ");
+        assert_eq!(lines_to_render[1], " Sub Item2      ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], " Sub Item2      ");
+
+        assert_eq!(menu.down(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], "→Sub Item2      ");
+
+        assert_eq!(menu.enter(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Sub2 Item1     ");
+        assert_eq!(lines_to_render[1], "                ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], " Sub Item1: ON  ");
+        assert_eq!(lines_to_render[1], "→Sub Item2      ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+
+        assert_eq!(menu.back(), true);
+        let lines_to_render = renderer.render(&menu);
+        assert_eq!(lines_to_render.len(), 2);
+        assert_eq!(lines_to_render[0], "→Item1          ");
+        assert_eq!(lines_to_render[1], " Item2          ");
+    }
 }

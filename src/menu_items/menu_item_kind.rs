@@ -6,10 +6,10 @@ use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 use crate::menu_items::toggle_menu_item::ToggleMenuItem;
 
 pub enum MenuItemKind<'a> {
-    ActionMenuItem(&'a ActionMenuItem<'a>),
-    BasicMenuItem(&'a BasicMenuItem<'a>),
-    ListMenuItem(&'a ListMenuItem<'a>),
-    RangeMenuItem(&'a RangeMenuItem<'a>),
-    ToggleMenuItem(&'a ToggleMenuItem<'a>),
-    SubmenuMenuItem(&'a SubmenuMenuItem<'a>),
+    ActionMenuItem(&'a ActionMenuItem),
+    BasicMenuItem(&'a BasicMenuItem),
+    ListMenuItem(&'a ListMenuItem),
+    RangeMenuItem(&'a RangeMenuItem),
+    ToggleMenuItem(&'a ToggleMenuItem),
+    SubmenuMenuItem(&'a SubmenuMenuItem),
 }

@@ -1,22 +1,20 @@
 use crate::keyboard::KeyboardKey;
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::str::FromStr;
-use heapless::String;
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use crate::menu_items::menu_item_kind::MenuItemKind;
 
-pub struct BasicMenuItem<'a> {
-    label: &'a str,
+pub struct BasicMenuItem {
+    label: String,
 }
 
-impl<'a> BasicMenuItem<'a> {
-    pub fn new(label: &str) -> BasicMenuItem {
+impl BasicMenuItem {
+    pub fn new(label: String) -> BasicMenuItem {
         BasicMenuItem { label }
     }
 }
 
-impl<'a> MenuItem<'a> for BasicMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
-        String::from_str(self.label).unwrap()
+impl MenuItem for BasicMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
+        self.label.clone() // TODO avoid clone
     }
 
     fn press(&mut self, _key: &KeyboardKey, _is_focused: bool) -> PressResult {
@@ -26,11 +24,10 @@ impl<'a> MenuItem<'a> for BasicMenuItem<'a> {
         }
     }
 
-    fn kind(&'a self) -> MenuItemKind<'a> {
+    fn kind(&self) -> MenuItemKind {
         MenuItemKind::BasicMenuItem(&self)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -39,7 +36,7 @@ mod tests {
 
     #[test]
     fn can_create_a_basic_menu_item() {
-        let mut item: BasicMenuItem = BasicMenuItem::new("label");
+        let mut item: BasicMenuItem = BasicMenuItem::new(String::from("label"));
         assert_eq!(item.get_label(false), "label");
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), false),

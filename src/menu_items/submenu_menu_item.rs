@@ -1,19 +1,17 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::str::FromStr;
-use heapless::{String};
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use crate::menu_items::menu_item_kind::MenuItemKind;
 
-pub struct SubmenuMenuItem<'a> {
-    label: &'a str,
-    items: &'a mut [&'a mut dyn MenuItem<'a>],
+pub struct SubmenuMenuItem {
+    label: String,
+    items: Vec<Box<dyn MenuItem>>,
     // View state
     selected_item_idx: usize,
     is_focused: bool,
 }
 
-impl<'a> SubmenuMenuItem<'a> {
-    pub fn new(label: &'a str, items: &'a mut [&'a mut dyn MenuItem<'a>]) -> SubmenuMenuItem<'a> {
+impl SubmenuMenuItem {
+    pub fn new(label: String, items: Vec<Box<dyn MenuItem>>) -> SubmenuMenuItem {
         // TODO panic if items length === 0
         SubmenuMenuItem {
             label,
@@ -23,12 +21,12 @@ impl<'a> SubmenuMenuItem<'a> {
         }
     }
 
-    pub fn get_selected_item(&'a self) -> &'a dyn MenuItem<'a> {
-        self.items[self.selected_item_idx]
+    pub fn get_selected_item(&self) -> &dyn MenuItem {
+        &*self.items[self.selected_item_idx]
     }
 
-    pub fn get_mut_selected_item(&mut self) -> &mut dyn MenuItem<'a> {
-        self.items[self.selected_item_idx]
+    pub fn get_mut_selected_item(&mut self) -> &mut dyn MenuItem {
+        &mut *self.items[self.selected_item_idx]
     }
 
     fn up(&mut self) -> bool {
@@ -67,7 +65,7 @@ impl<'a> SubmenuMenuItem<'a> {
         self.selected_item_idx
     }
 
-    pub fn get_item(&'a self, idx: usize) -> Option<&'a dyn MenuItem<'a>> {
+    pub fn get_item(&self, idx: usize) -> Option<&dyn MenuItem> {
         self.items.get(idx).map(|v| &**v)
     }
 
@@ -76,9 +74,9 @@ impl<'a> SubmenuMenuItem<'a> {
     }
 }
 
-impl<'a> MenuItem<'a> for SubmenuMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
-        String::from_str(self.label).unwrap()
+impl MenuItem for SubmenuMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
+        self.label.clone() // TODO avoid clone
     }
 
     fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult {
@@ -141,7 +139,7 @@ impl<'a> MenuItem<'a> for SubmenuMenuItem<'a> {
         }
     }
 
-    fn kind(&'a self) -> MenuItemKind<'a> {
+    fn kind(&self) -> MenuItemKind {
         MenuItemKind::SubmenuMenuItem(&self)
     }
 }
@@ -153,10 +151,9 @@ mod tests {
 
     #[test]
     fn can_create_a_menu_item() {
-        let mut items: [&mut dyn MenuItem; 1] =
-            [&mut BasicMenuItem::new("Item1")];
-        let item: SubmenuMenuItem =
-            SubmenuMenuItem::new("label", &mut items);
+        let items: Vec<Box<dyn MenuItem>> =
+            vec![Box::new(BasicMenuItem::new(String::from("Item1")))];
+        let item: SubmenuMenuItem = SubmenuMenuItem::new(String::from("label"), items);
 
         assert_eq!(item.get_label(false), "label");
     }

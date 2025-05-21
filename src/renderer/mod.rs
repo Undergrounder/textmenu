@@ -1,1 +1,1 @@
-mod string_renderer;
+pub mod string_renderer;

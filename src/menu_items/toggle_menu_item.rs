@@ -1,22 +1,21 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::fmt::Write;
-use heapless::String;
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use crate::menu_items::menu_item_kind::MenuItemKind;
+use core::fmt::Write;
 
-pub struct ToggleMenuItem<'a> {
-    label: &'a str,
-    text_true: &'a str,
-    text_false: &'a str,
+pub struct ToggleMenuItem {
+    label: String,
+    text_true: String,
+    text_false: String,
     value: bool,
 }
 
-impl<'a> ToggleMenuItem<'a> {
-    pub fn new(label: &str) -> ToggleMenuItem {
+impl ToggleMenuItem {
+    pub fn new(label: String) -> ToggleMenuItem {
         ToggleMenuItem {
             label,
-            text_true: "ON",
-            text_false: "OFF",
+            text_true: String::from("ON"),
+            text_false: String::from("OFF"),
             value: false,
         }
     }
@@ -31,14 +30,14 @@ impl<'a> ToggleMenuItem<'a> {
     }
 }
 
-impl<'a> MenuItem<'a> for ToggleMenuItem<'a> {
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
+impl MenuItem for ToggleMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
         let value_text = if self.value {
-            self.text_true
+            &self.text_true
         } else {
-            self.text_false
+            &self.text_false
         };
-        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        let mut label_str: String = String::new();
         write!(label_str, "{}: {}", self.label, &value_text).unwrap();
         label_str
     }
@@ -58,7 +57,7 @@ impl<'a> MenuItem<'a> for ToggleMenuItem<'a> {
         }
     }
 
-    fn kind(&'a self) -> MenuItemKind<'a> {
+    fn kind(&self) -> MenuItemKind {
         MenuItemKind::ToggleMenuItem(&self)
     }
 }
@@ -69,7 +68,7 @@ mod tests {
 
     #[test]
     fn item_is_usable() {
-        let mut item: ToggleMenuItem = ToggleMenuItem::new("label");
+        let mut item: ToggleMenuItem = ToggleMenuItem::new(String::from("label"));
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), false),
             PressResult {
