@@ -1,6 +1,5 @@
 use crate::menu::Menu;
 use crate::menu_items::menu_item::MenuItem;
-use crate::menu_items::menu_item_kind::MenuItemKind;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 use core::fmt::Write;
 
@@ -42,8 +41,7 @@ impl StringRenderer {
     }
 
     fn generate_lines_to_render<'a>(&self, item: &dyn MenuItem) -> Option<Vec<String>> {
-        let selected_item_kind = item.kind();
-        if let MenuItemKind::SubmenuMenuItem(&ref sub_submenu) = &selected_item_kind {
+        if let Some(sub_submenu) = item.as_any().downcast_ref::<SubmenuMenuItem>() {
             let lines_from_item_option = if sub_submenu.is_focused() {
                 let selected_item = sub_submenu.get_selected_item();
                 let item_lines_to_render_option = self.generate_lines_to_render(selected_item);

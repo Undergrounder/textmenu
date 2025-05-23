@@ -1,5 +1,5 @@
 use crate::keyboard::KeyboardKey;
-use crate::menu_items::menu_item_kind::MenuItemKind;
+use std::any::Any;
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct PressResult {
@@ -7,8 +7,9 @@ pub struct PressResult {
     pub focus: bool,
 }
 
-pub trait MenuItem {
+pub trait MenuItem: Any {
     fn get_label(&self, is_focused: bool) -> String;
     fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult;
-    fn kind(&self) -> MenuItemKind;
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }

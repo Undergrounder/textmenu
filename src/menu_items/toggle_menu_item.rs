@@ -1,7 +1,7 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult};
-use crate::menu_items::menu_item_kind::MenuItemKind;
 use core::fmt::Write;
+use std::any::Any;
 
 pub struct ToggleMenuItem {
     label: String,
@@ -57,8 +57,12 @@ impl MenuItem for ToggleMenuItem {
         }
     }
 
-    fn kind(&self) -> MenuItemKind {
-        MenuItemKind::ToggleMenuItem(&self)
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

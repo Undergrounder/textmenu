@@ -1,6 +1,6 @@
 use crate::keyboard::KeyboardKey;
 use crate::menu_items::menu_item::{MenuItem, PressResult};
-use crate::menu_items::menu_item_kind::MenuItemKind;
+use std::any::Any;
 
 pub struct BasicMenuItem {
     label: String,
@@ -24,8 +24,12 @@ impl MenuItem for BasicMenuItem {
         }
     }
 
-    fn kind(&self) -> MenuItemKind {
-        MenuItemKind::BasicMenuItem(&self)
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

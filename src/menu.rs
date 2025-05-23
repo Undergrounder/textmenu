@@ -59,7 +59,6 @@ mod tests {
     use crate::menu_items::action_menu_item::ActionMenuItem;
     use crate::menu_items::basic_menu_item::BasicMenuItem;
     use crate::menu_items::list_menu_item::ListMenuItem;
-    use crate::menu_items::menu_item_kind::MenuItemKind;
     use crate::menu_items::range_menu_item::RangeMenuItem;
     use crate::menu_items::toggle_menu_item::ToggleMenuItem;
     use std::cell::RefCell;
@@ -220,7 +219,7 @@ mod tests {
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
         let selected_item = submenu_menu_item.get_selected_item();
-        if let MenuItemKind::ListMenuItem(list_menu_item) = selected_item.kind() {
+        if let Some(list_menu_item) = selected_item.as_any().downcast_ref::<ListMenuItem>() {
             assert_list_menu_item(
                 list_menu_item,
                 submenu_menu_item.is_focused(),
@@ -292,8 +291,8 @@ mod tests {
         assert_eq!(item.get_value(), expected_value);
     }
 
-    fn get_required_toggle<'a>(item_kind: &'a MenuItemKind<'a>) -> &'a ToggleMenuItem {
-        if let MenuItemKind::ToggleMenuItem(toggle_menu_item) = *item_kind {
+    fn get_required_toggle(item: & dyn MenuItem) -> &ToggleMenuItem {
+        if let Some(toggle_menu_item) = item.as_any().downcast_ref::<ToggleMenuItem>() {
             toggle_menu_item
         } else {
             panic!("Selected item must be of type ToggleMenuItem");
@@ -306,8 +305,8 @@ mod tests {
         expected_value: bool,
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
-        let selected_item_kind = submenu_menu_item.get_selected_item().kind();
-        let toggle_menu_item = get_required_toggle(&selected_item_kind);
+        let selected_item = submenu_menu_item.get_selected_item();
+        let toggle_menu_item = get_required_toggle(selected_item);
         assert_toggle_menu_item(
             toggle_menu_item,
             submenu_menu_item.is_focused(),
@@ -336,8 +335,8 @@ mod tests {
         assert_focused_toggle_menu_item_state(&menu, "Item1: OFF", false);
     }
 
-    fn get_required_range<'a>(item_kind: &'a MenuItemKind<'a>) -> &'a RangeMenuItem {
-        if let MenuItemKind::RangeMenuItem(range_menu_item) = *item_kind {
+    fn get_required_range(item: &dyn MenuItem) -> &RangeMenuItem {
+        if let Some(range_menu_item) = item.as_any().downcast_ref::<RangeMenuItem>() {
             range_menu_item
         } else {
             panic!("Selected item must be of type RangeMenuItem");
@@ -350,8 +349,8 @@ mod tests {
         expected_value: u32,
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
-        let selected_item_kind = submenu_menu_item.get_selected_item().kind();
-        let range_menu_item = get_required_range(&selected_item_kind);
+        let selected_item = submenu_menu_item.get_selected_item();
+        let range_menu_item = get_required_range(selected_item);
         assert_eq!(
             range_menu_item.get_label(submenu_menu_item.is_focused()),
             expected_label
@@ -391,8 +390,8 @@ mod tests {
         assert_focused_range_menu_item_state(&menu, "Item1: 10", 10);
     }
 
-    fn get_required_submenu<'a>(item_kind: &'a MenuItemKind<'a>) -> &'a SubmenuMenuItem {
-        if let MenuItemKind::SubmenuMenuItem(submenu_menu_item) = *item_kind {
+    fn get_required_submenu(item: &dyn MenuItem) -> &SubmenuMenuItem {
+        if let Some(submenu_menu_item) = item.as_any().downcast_ref::<SubmenuMenuItem>() {
             submenu_menu_item
         } else {
             panic!("Selected item must be of type SubmenuMenuItem");
@@ -406,8 +405,8 @@ mod tests {
         expected_is_focused: bool,
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
-        let selected_item_kind = submenu_menu_item.get_selected_item().kind();
-        let submenu_item = get_required_submenu(&selected_item_kind);
+        let selected_item = submenu_menu_item.get_selected_item();
+        let submenu_item = get_required_submenu(selected_item);
         assert_submenu(
             submenu_item,
             expected_item_count,
@@ -422,10 +421,10 @@ mod tests {
         expected_value: bool,
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
-        let selected_item_kind = submenu_menu_item.get_selected_item().kind();
-        let submenu = get_required_submenu(&selected_item_kind);
-        let selected_lvl2_item_kind = submenu.get_selected_item().kind();
-        let toggle_menu_item = get_required_toggle(&selected_lvl2_item_kind);
+        let selected_item = submenu_menu_item.get_selected_item();
+        let submenu = get_required_submenu(selected_item);
+        let selected_lvl2_item = submenu.get_selected_item();
+        let toggle_menu_item = get_required_toggle(selected_lvl2_item);
         assert_toggle_menu_item(
             toggle_menu_item,
             submenu_menu_item.is_focused(),
@@ -441,10 +440,9 @@ mod tests {
         expected_is_focused: bool,
     ) {
         let submenu_menu_item = menu.get_submenu_menu_item();
-        let selected_item_kind = submenu_menu_item.get_selected_item().kind();
-        let submenu_item = get_required_submenu(&selected_item_kind);
-        let selected_lvl2_item_kind = submenu_item.get_selected_item().kind();
-        let submenu_lvl2_item = get_required_submenu(&selected_lvl2_item_kind);
+        let submenu_item = get_required_submenu(submenu_menu_item.get_selected_item());
+        let selected_lvl2_item = submenu_item.get_selected_item();
+        let submenu_lvl2_item = get_required_submenu(selected_lvl2_item);
         assert_submenu(
             submenu_lvl2_item,
             expected_item_count,
