@@ -15,7 +15,7 @@ impl ActionMenuItem {
 
 impl MenuItem for ActionMenuItem {
     fn get_label(&self, _is_focused: bool) -> String {
-        self.label.clone() // TODO avoid clone
+        self.label.clone()
     }
 
     fn press(&mut self, key: &KeyboardKey, _is_focused: bool) -> PressResult {

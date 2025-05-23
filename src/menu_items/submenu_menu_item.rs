@@ -76,7 +76,7 @@ impl SubmenuMenuItem {
 
 impl MenuItem for SubmenuMenuItem {
     fn get_label(&self, _is_focused: bool) -> String {
-        self.label.clone() // TODO avoid clone
+        self.label.clone()
     }
 
     fn press(&mut self, key: &KeyboardKey, is_focused: bool) -> PressResult {
