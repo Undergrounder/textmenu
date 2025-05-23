@@ -512,12 +512,12 @@ mod tests {
     fn submenu_is_usable() {
         let submenu2_items: Vec<Box<dyn MenuItem>> =
             vec![Box::new(BasicMenuItem::new(String::from("Sub2 Item1")))];
-        let subitem2 = SubmenuMenuItem::new(String::from("Sub Item2"), submenu2_items);
+        let subitem2 = SubmenuMenuItem::new(String::from("Sub Item2"), submenu2_items).unwrap();
         let submenu1_items: Vec<Box<dyn MenuItem>> = vec![
             Box::new(ToggleMenuItem::new(String::from("Sub Item1"))),
             Box::new(subitem2),
         ];
-        let item1 = SubmenuMenuItem::new(String::from("Item1"), submenu1_items);
+        let item1 = SubmenuMenuItem::new(String::from("Item1"), submenu1_items).unwrap();
 
         let items: Vec<Box<dyn MenuItem>> = vec![
             Box::new(item1),

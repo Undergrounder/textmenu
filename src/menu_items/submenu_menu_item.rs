@@ -10,14 +10,22 @@ pub struct SubmenuMenuItem {
     is_focused: bool,
 }
 
+#[derive(Debug)]
+pub enum NewError {
+    InvalidItemsLength,
+}
+
 impl SubmenuMenuItem {
-    pub fn new(label: String, items: Vec<Box<dyn MenuItem>>) -> SubmenuMenuItem {
-        // TODO panic if items length === 0
-        SubmenuMenuItem {
-            label,
-            items,
-            selected_item_idx: 0,
-            is_focused: false,
+    pub fn new(label: String, items: Vec<Box<dyn MenuItem>>) -> Result<SubmenuMenuItem, NewError> {
+        if items.len() == 0 {
+            Err(NewError::InvalidItemsLength)
+        } else {
+            Ok(SubmenuMenuItem {
+                label,
+                items,
+                selected_item_idx: 0,
+                is_focused: false,
+            })
         }
     }
 
@@ -153,7 +161,7 @@ mod tests {
     fn can_create_a_menu_item() {
         let items: Vec<Box<dyn MenuItem>> =
             vec![Box::new(BasicMenuItem::new(String::from("Item1")))];
-        let item: SubmenuMenuItem = SubmenuMenuItem::new(String::from("label"), items);
+        let item: SubmenuMenuItem = SubmenuMenuItem::new(String::from("label"), items).unwrap();
 
         assert_eq!(item.get_label(false), "label");
     }

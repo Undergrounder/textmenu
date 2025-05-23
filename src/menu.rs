@@ -6,16 +6,18 @@ pub struct Menu {
     submenu_menu_item: SubmenuMenuItem,
 }
 
+#[derive(Debug)]
+pub enum NewError {
+    InvalidItemsLength,
+}
+
 impl Menu {
-    pub fn new(items: Vec<Box<dyn MenuItem>>) -> Result<Menu, &'static str> {
-        if items.len() == 0 {
-            Err("At least 1 menu item required.")
-        } else {
-            let menu = Menu {
-                submenu_menu_item: SubmenuMenuItem::new(String::from("Root"), items),
-            };
-            Ok(menu)
-        }
+    pub fn new(items: Vec<Box<dyn MenuItem>>) -> Result<Menu, NewError> {
+        let submenu = SubmenuMenuItem::new(String::from("Root"), items)
+            .map_err(|_| NewError::InvalidItemsLength)?;
+        Ok(Menu {
+            submenu_menu_item: submenu,
+        })
     }
 
     pub fn get_submenu_menu_item(&self) -> &SubmenuMenuItem {
@@ -455,12 +457,12 @@ mod tests {
     fn submenu_is_usable() {
         let submenu2_items: Vec<Box<dyn MenuItem>> =
             vec![Box::new(BasicMenuItem::new(String::from("Sub2 Item1")))];
-        let subitem2 = SubmenuMenuItem::new(String::from("Sub Item2"), submenu2_items);
+        let subitem2 = SubmenuMenuItem::new(String::from("Sub Item2"), submenu2_items).unwrap();
         let submenu1_items: Vec<Box<dyn MenuItem>> = vec![
             Box::new(ToggleMenuItem::new(String::from("Sub Item1"))),
             Box::new(subitem2),
         ];
-        let item1 = SubmenuMenuItem::new(String::from("Item1"), submenu1_items);
+        let item1 = SubmenuMenuItem::new(String::from("Item1"), submenu1_items).unwrap();
         let items: Vec<Box<dyn MenuItem>> = vec![
             Box::new(item1),
             Box::new(BasicMenuItem::new(String::from("Item2"))),
