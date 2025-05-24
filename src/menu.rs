@@ -495,10 +495,3 @@ mod tests {
         assert_submenu_state(&menu, 2, 0, false);
     }
 }
-
-// TODO improvements:
-// TODO input item
-// TODO charset input item
-// TODO horizontal scrolling if overflow
-// TODO disable functionality via features
-// TODO more range items (u8, signed, float, ....)
