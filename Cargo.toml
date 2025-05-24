@@ -12,7 +12,15 @@ license = "MIT"
 [dependencies]
 
 [features]
-default = ["max_label_length_50"]
-max_label_length_50 = []
-max_label_length_100 = []
-max_label_length_200 = []
+default = [
+    "action_menu_item",
+    "basic_menu_item",
+    "list_menu_item",
+    "range_menu_item",
+    "toggle_menu_item"
+]
+action_menu_item = []
+basic_menu_item = []
+list_menu_item = []
+range_menu_item = []
+toggle_menu_item = []
