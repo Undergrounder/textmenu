@@ -11,5 +11,7 @@ pub mod menu_item;
 #[cfg(feature = "range_menu_item")]
 pub mod range_menu_item;
 
+pub mod submenu_menu_item;
+
 #[cfg(feature = "toggle_menu_item")]
 pub mod toggle_menu_item;
