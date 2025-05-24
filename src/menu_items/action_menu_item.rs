@@ -1,30 +1,21 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::str::FromStr;
-use heapless::{String, Vec};
+use crate::menu_items::menu_item::{MenuItem, PressResult};
+use std::any::Any;
 
-pub struct ActionMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
-    label: &'a str,
-    on_pressed: &'a mut dyn FnMut() -> bool,
+pub struct ActionMenuItem {
+    label: String,
+    on_pressed: Box<dyn FnMut() -> bool>,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(
-        label: &'a str,
-        on_pressed: &'a mut dyn FnMut() -> bool,
-    ) -> ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+impl ActionMenuItem {
+    pub fn new(label: String, on_pressed: Box<dyn FnMut() -> bool>) -> ActionMenuItem {
         ActionMenuItem { label, on_pressed }
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for ActionMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
-        String::from_str(self.label).unwrap()
+impl MenuItem for ActionMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
+        self.label.clone()
     }
 
     fn press(&mut self, key: &KeyboardKey, _is_focused: bool) -> PressResult {
@@ -44,10 +35,12 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
         }
     }
 
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
@@ -55,7 +48,6 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
 mod tests {
     use super::*;
 
-    use crate::consts::BYTES_PER_CHAR;
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -63,12 +55,12 @@ mod tests {
     fn can_create_a_menu_item() {
         let clicked_count = Rc::new(RefCell::new(0));
         let clicked_count_clone = Rc::clone(&clicked_count);
-        let mut on_click = move || {
+        let on_click = move || {
             *clicked_count_clone.borrow_mut() += 1;
             true
         };
-        let mut item: ActionMenuItem<2, { 16 * BYTES_PER_CHAR }> =
-            ActionMenuItem::new("label", &mut on_click);
+        let mut item: ActionMenuItem =
+            ActionMenuItem::new(String::from("label"), Box::new(on_click));
         assert_eq!(item.get_label(false), "label");
         assert_eq!(*clicked_count.borrow(), 0);
 

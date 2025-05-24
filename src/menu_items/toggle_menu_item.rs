@@ -1,23 +1,21 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
+use crate::menu_items::menu_item::{MenuItem, PressResult};
 use core::fmt::Write;
-use heapless::{String, Vec};
+use std::any::Any;
 
-pub struct ToggleMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
-    label: &'a str,
-    text_true: &'a str,
-    text_false: &'a str,
+pub struct ToggleMenuItem {
+    label: String,
+    text_true: String,
+    text_false: String,
     value: bool,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    ToggleMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(label: &str) -> ToggleMenuItem<CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+impl ToggleMenuItem {
+    pub fn new(label: String) -> ToggleMenuItem {
         ToggleMenuItem {
             label,
-            text_true: "ON",
-            text_false: "OFF",
+            text_true: String::from("ON"),
+            text_false: String::from("OFF"),
             value: false,
         }
     }
@@ -32,17 +30,14 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for ToggleMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
+impl MenuItem for ToggleMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
         let value_text = if self.value {
-            self.text_true
+            &self.text_true
         } else {
-            self.text_false
+            &self.text_false
         };
-        let mut label_str: String<{ LABEL_BYTES }> = String::new();
+        let mut label_str: String = String::new();
         write!(label_str, "{}: {}", self.label, &value_text).unwrap();
         label_str
     }
@@ -62,21 +57,22 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
         }
     }
 
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::BYTES_PER_CHAR;
 
     #[test]
     fn item_is_usable() {
-        let mut item: ToggleMenuItem<2, { 16 * BYTES_PER_CHAR }> = ToggleMenuItem::new("label");
+        let mut item: ToggleMenuItem = ToggleMenuItem::new(String::from("label"));
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), false),
             PressResult {

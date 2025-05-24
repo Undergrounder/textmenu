@@ -1,26 +1,20 @@
 use crate::keyboard::KeyboardKey;
-use crate::menu_items::menu_item::{MenuItem, PressResult, LABEL_BYTES};
-use core::str::FromStr;
-use heapless::{String, Vec};
+use crate::menu_items::menu_item::{MenuItem, PressResult};
+use std::any::Any;
 
-pub struct BasicMenuItem<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize> {
-    label: &'a str,
+pub struct BasicMenuItem {
+    label: String,
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    BasicMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    pub fn new(label: &str) -> BasicMenuItem<CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST> {
+impl BasicMenuItem {
+    pub fn new(label: String) -> BasicMenuItem {
         BasicMenuItem { label }
     }
 }
 
-impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
-    MenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-    for BasicMenuItem<'a, CHAR_HEIGHT_CONST, LINE_BYTES_SIZE_CONST>
-{
-    fn get_label(&self, _is_focused: bool) -> String<{ LABEL_BYTES }> {
-        String::from_str(self.label).unwrap()
+impl MenuItem for BasicMenuItem {
+    fn get_label(&self, _is_focused: bool) -> String {
+        self.label.clone()
     }
 
     fn press(&mut self, _key: &KeyboardKey, _is_focused: bool) -> PressResult {
@@ -30,22 +24,23 @@ impl<'a, const CHAR_HEIGHT_CONST: usize, const LINE_BYTES_SIZE_CONST: usize>
         }
     }
 
-    fn generate_lines_to_render(
-        &self,
-    ) -> Option<Vec<String<LINE_BYTES_SIZE_CONST>, CHAR_HEIGHT_CONST>> {
-        None
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::BYTES_PER_CHAR;
     use crate::keyboard::FunctionKey;
 
     #[test]
     fn can_create_a_basic_menu_item() {
-        let mut item: BasicMenuItem<2, { 16 * BYTES_PER_CHAR }> = BasicMenuItem::new("label");
+        let mut item: BasicMenuItem = BasicMenuItem::new(String::from("label"));
         assert_eq!(item.get_label(false), "label");
         assert_eq!(
             item.press(&KeyboardKey::new(Some(FunctionKey::LEFT), None), false),
