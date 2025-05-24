@@ -291,7 +291,7 @@ mod tests {
         assert_eq!(item.get_value(), expected_value);
     }
 
-    fn get_required_toggle(item: & dyn MenuItem) -> &ToggleMenuItem {
+    fn get_required_toggle(item: &dyn MenuItem) -> &ToggleMenuItem {
         if let Some(toggle_menu_item) = item.as_any().downcast_ref::<ToggleMenuItem>() {
             toggle_menu_item
         } else {

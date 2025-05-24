@@ -12,9 +12,8 @@ cargo build --release
 cargo test --release
 ```
 
-## Pendings improvements
+## Pending improvements
 
-* Features to disable item types
 * Features to disable interface impls
 ** Debug
 ** Eq, PartialEq
@@ -23,4 +22,6 @@ cargo test --release
 ** Charset input item
 ** More range items (u8, signed, float, ....)
 * Horizontal scrolling if overflow
+* Create/improve documentation
+* Publish crate 
 * Stabilize API and release first stable version
