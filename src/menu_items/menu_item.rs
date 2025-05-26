@@ -1,5 +1,8 @@
 use crate::keyboard::KeyboardKey;
-use std::any::Any;
+use core::any::Any;
+
+extern crate alloc;
+use alloc::string::String;
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct PressResult {

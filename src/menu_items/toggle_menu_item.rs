@@ -1,7 +1,13 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult};
+use core::any::Any;
 use core::fmt::Write;
-use std::any::Any;
+
+extern crate alloc;
+use alloc::string::String;
+use core::convert::From;
+
+use core::option::Option::Some;
 
 pub struct ToggleMenuItem {
     label: String,

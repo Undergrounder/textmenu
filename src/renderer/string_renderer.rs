@@ -3,6 +3,15 @@ use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 use core::fmt::Write;
 
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use core::option::Option;
+use core::option::Option::{None, Some};
+use core::result::Result;
+use core::result::Result::{Err, Ok};
+
 pub struct StringRenderer {
     char_count: usize,
     line_count: usize,

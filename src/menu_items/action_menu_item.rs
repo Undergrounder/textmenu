@@ -1,6 +1,13 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult};
-use std::any::Any;
+use core::any::Any;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+
+use core::ops::FnMut;
+use core::option::Option::Some;
 
 pub struct ActionMenuItem {
     label: String,

@@ -1,6 +1,9 @@
 use crate::keyboard::KeyboardKey;
 use crate::menu_items::menu_item::{MenuItem, PressResult};
-use std::any::Any;
+use core::any::Any;
+
+extern crate alloc;
+use alloc::string::String;
 
 pub struct BasicMenuItem {
     label: String,

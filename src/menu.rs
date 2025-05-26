@@ -2,6 +2,18 @@ use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::MenuItem;
 use crate::menu_items::submenu_menu_item::SubmenuMenuItem;
 
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use core::option::Option::{None, Some};
+use core::result::Result;
+use core::result::Result::Ok;
+
+use core::fmt::Debug;
+use core::prelude::rust_2024::derive;
+
 pub struct Menu {
     submenu_menu_item: SubmenuMenuItem,
 }

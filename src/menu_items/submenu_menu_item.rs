@@ -1,6 +1,19 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult};
-use std::any::Any;
+use core::any::Any;
+
+extern crate alloc;
+use alloc::string::String;
+
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::option::Option;
+use core::option::Option::Some;
+use core::result::Result;
+use core::result::Result::{Err, Ok};
+
+use core::fmt::Debug;
+use core::prelude::rust_2024::derive;
 
 pub struct SubmenuMenuItem {
     label: String,

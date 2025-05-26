@@ -1,7 +1,15 @@
 use crate::keyboard::{FunctionKey, KeyboardKey};
 use crate::menu_items::menu_item::{MenuItem, PressResult};
+use core::any::Any;
 use core::fmt::Write;
-use std::any::Any;
+
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use core::option::Option::Some;
+use core::result::Result;
+use core::result::Result::{Err, Ok};
 
 pub struct ListMenuItem {
     label: String,
